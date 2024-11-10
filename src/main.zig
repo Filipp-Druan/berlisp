@@ -7,9 +7,9 @@ pub fn main() !void {
     const num_1 = try allocator.create(LispObj);
     const num_2 = try allocator.create(LispObj);
     num_1.* = LispObj{ .number = 32 };
-    num_2.* = LispObj{ .number = 32 };
+    num_2.* = LispObj{ .number = 64 };
     const cell = try ConsCell.new(allocator, num_1, num_2);
-    std.debug.print("car = {d}, cdr = {d}", .{ cell.car.number, cell.cdr.number });
+    std.debug.print("car = {d}, cdr = {d}\n", .{ cell.car.number, cell.cdr.number });
 
     // stdout is for the actual output of your application, for example if you
     // are implementing gzip, then only the compressed bytes should be sent to
