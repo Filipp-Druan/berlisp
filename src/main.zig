@@ -1,47 +1,48 @@
 const std = @import("std");
 
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
+pub fn main() !void {}
 
-    const num_1 = try allocator.create(LispObj);
-    const num_2 = try allocator.create(LispObj);
-    num_1.* = LispObj{ .number = 32 };
-    num_2.* = LispObj{ .number = 64 };
-    const cell = try ConsCell.new(allocator, num_1, num_2);
-    std.debug.print("car = {d}, cdr = {d}\n", .{ cell.car.number, cell.cdr.number });
-
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-}
 const LispObj = union(enum) {
     symbol: Symbol,
     cons_cell: ConsCell,
-    number: i128,
+    env: Enviroment,
 };
 
-const ConsCell = struct {
-    car: *LispObj,
-    cdr: *LispObj,
+const GCObj = struct {
+    ref_counter: isize,
+    obj: LispObj,
 
-    pub fn new(
-        allocator: std.mem.Allocator,
-        car: *LispObj,
-        cdr: *LispObj,
-    ) !*ConsCell {
-        var cell = try allocator.create(ConsCell);
-        cell.car = car;
-        cell.cdr = cdr;
-        return cell;
+    pub fn getReference(self: GCObj) *GCObj {
+        self.ref_counter += 1;
+        return &self;
+    }
+
+    pub fn deleteReference(self: *GCObj, allocator: std.mem.Allocator) void {
+        self.ref_counter -= 1;
+        if (self.ref_counter == 0) {
+            switch (self.obj) {
+                .symbol => |_| {
+                    allocator.destroy(self);
+                },
+                .cons_cell => |cell| {
+                    deleteReference(cell.car, allocator);
+                    deleteReference(cell.cdr, allocator);
+                    allocator.destroy(self);
+                },
+            }
+        }
     }
 };
 
-const Symbol = struct {
-    name: []u8,
+const ConsCell = struct {
+    car: *GCObj,
+    cdr: *GCObj,
 };
+
+const Symbol = struct {
+    name: std.ArrayList(u8),
+};
+
+const Enviroment = std.ArrayHashMap(Symbol, *GCObj, true);
+
+//pub fn read(str: []u8) !LispObj {} // TODO
