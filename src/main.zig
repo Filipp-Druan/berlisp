@@ -12,6 +12,15 @@ const GCObj = struct {
     ref_counter: isize,
     obj: LispObj,
 
+    pub fn new(allocator: std.mem.Allocator, obj: LispObj) !*GCObj {
+        var gco = try allocator.create(GCObj);
+
+        gco.ref_counter = 1;
+        gco.obj = obj;
+
+        return gco;
+    }
+
     pub fn getReference(self: GCObj) *GCObj {
         self.ref_counter += 1;
         return &self;
@@ -21,7 +30,8 @@ const GCObj = struct {
         self.ref_counter -= 1;
         if (self.ref_counter == 0) {
             switch (self.obj) {
-                .symbol => |_| {
+                .symbol => |sym| {
+                    sym.delete(allocator);
                     allocator.destroy(self);
                 },
                 .cons_cell => |cell| {
@@ -39,8 +49,25 @@ const ConsCell = struct {
     cdr: *GCObj,
 };
 
+const SymbolPackage = struct { symbols: std.StringHashMap(*GCObj) };
+
 const Symbol = struct {
-    name: std.ArrayList(u8),
+    name: []const u8,
+
+    fn new(allocator: std.mem.Allocator, name: []const u8) !*GCObj {
+        const name_memory = try allocator.alloc(u8, name.len);
+        std.mem.copyForwards(u8, name_memory, name);
+
+        const gco = try GCObj.new(.{
+            .symbol = .{ .name = name_memory },
+        });
+
+        return gco;
+    }
+
+    fn delete(self: Symbol, allocator: std.mem.Allocator) void {
+        allocator.free(self.name);
+    }
 };
 
 const Enviroment = std.ArrayHashMap(Symbol, *GCObj, true);
