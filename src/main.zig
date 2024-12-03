@@ -8,25 +8,25 @@ const LispObj = union(enum) {
     env: Enviroment,
 };
 
-const GCObj = struct {
+const RCObj = struct {
     ref_counter: isize,
     obj: LispObj,
 
-    pub fn new(allocator: std.mem.Allocator, obj: LispObj) !*GCObj {
-        var gco = try allocator.create(GCObj);
+    pub fn new(allocator: std.mem.Allocator, obj: LispObj) !*RCObj {
+        var rco = try allocator.create(RCObj);
 
-        gco.ref_counter = 1;
-        gco.obj = obj;
+        rco.ref_counter = 1;
+        rco.obj = obj;
 
-        return gco;
+        return rco;
     }
 
-    pub fn getReference(self: GCObj) *GCObj {
+    pub fn getReference(self: RCObj) *RCObj {
         self.ref_counter += 1;
         return &self;
     }
 
-    pub fn deleteReference(self: *GCObj, allocator: std.mem.Allocator) void {
+    pub fn deleteReference(self: *RCObj, allocator: std.mem.Allocator) void {
         self.ref_counter -= 1;
         if (self.ref_counter == 0) {
             switch (self.obj) {
@@ -45,24 +45,24 @@ const GCObj = struct {
 };
 
 const ConsCell = struct {
-    car: *GCObj,
-    cdr: *GCObj,
+    car: *RCObj,
+    cdr: *RCObj,
 };
 
-const SymbolPackage = struct { symbols: std.StringHashMap(*GCObj) };
+const SymbolPackage = struct { symbols: std.StringHashMap(*RCObj) };
 
 const Symbol = struct {
     name: []const u8,
 
-    fn new(allocator: std.mem.Allocator, name: []const u8) !*GCObj {
+    fn new(allocator: std.mem.Allocator, name: []const u8) !*RCObj {
         const name_memory = try allocator.alloc(u8, name.len);
         std.mem.copyForwards(u8, name_memory, name);
 
-        const gco = try GCObj.new(.{
+        const rco = try RCObj.new(.{
             .symbol = .{ .name = name_memory },
         });
 
-        return gco;
+        return rco;
     }
 
     fn delete(self: Symbol, allocator: std.mem.Allocator) void {
@@ -70,6 +70,6 @@ const Symbol = struct {
     }
 };
 
-const Enviroment = std.ArrayHashMap(Symbol, *GCObj, true);
+const Enviroment = std.ArrayHashMap(Symbol, *RCObj, true);
 
 //pub fn read(str: []u8) !LispObj {} // TODO
