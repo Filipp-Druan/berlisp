@@ -31,12 +31,11 @@ const RCObj = struct {
         if (self.ref_counter == 0) {
             switch (self.obj) {
                 .symbol => |sym| {
-                    sym.delete(allocator);
+                    sym.prepareToRemove(allocator);
                     allocator.destroy(self);
                 },
                 .cons_cell => |cell| {
-                    deleteReference(cell.car, allocator);
-                    deleteReference(cell.cdr, allocator);
+                    cell.prepareToRemove(allocator);
                     allocator.destroy(self);
                 },
             }
@@ -50,6 +49,11 @@ const ConsCell = struct {
 
     fn new(allocator: std.mem.Allocator, car: *RCObj, cdr: *RCObj) *RCObj {
         return try RCObj.new(allocator, .{ .cons_cell = .{ .car = car, .cdr = cdr } });
+    }
+
+    fn prepareToRemove(self: ConsCell, allocator: std.mem.Allocator) void {
+        self.car.deleteReference(allocator);
+        self.cdr.deleteReference(allocator);
     }
 };
 
@@ -69,7 +73,7 @@ const Symbol = struct {
         return rco;
     }
 
-    fn delete(self: Symbol, allocator: std.mem.Allocator) void {
+    fn prepareToRemove(self: Symbol, allocator: std.mem.Allocator) void {
         allocator.free(self.name);
     }
 };
@@ -77,5 +81,3 @@ const Symbol = struct {
 const Enviroment = std.ArrayHashMap(Symbol, *RCObj, true);
 
 //pub fn read(str: []u8) !LispObj {} // TODO
-
-test "Reference counting memory leaks" {}
