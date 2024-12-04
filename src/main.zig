@@ -47,6 +47,10 @@ const RCObj = struct {
 const ConsCell = struct {
     car: *RCObj,
     cdr: *RCObj,
+
+    fn new(allocator: std.mem.Allocator, car: *RCObj, cdr: *RCObj) *RCObj {
+        return try RCObj.new(allocator, .{ .cons_cell = .{ .car = car, .cdr = cdr } });
+    }
 };
 
 const SymbolPackage = struct { symbols: std.StringHashMap(*RCObj) };
@@ -73,3 +77,5 @@ const Symbol = struct {
 const Enviroment = std.ArrayHashMap(Symbol, *RCObj, true);
 
 //pub fn read(str: []u8) !LispObj {} // TODO
+
+test "Reference counting memory leaks" {}
