@@ -5,7 +5,7 @@ pub fn main() !void {}
 const LispObj = union(enum) {
     symbol: Symbol,
     cons_cell: ConsCell,
-    env: Enviroment,
+    enviroment: Enviroment,
 };
 
 const RCObj = struct {
@@ -38,6 +38,10 @@ const RCObj = struct {
                     cell.prepareToRemove(allocator);
                     allocator.destroy(self);
                 },
+                .enviroment => |env| {
+                    env.prepareToRemove(allocator);
+                    allocator.destroy(self);
+                },
             }
         }
     }
@@ -47,8 +51,8 @@ const ConsCell = struct {
     car: *RCObj,
     cdr: *RCObj,
 
-    fn new(allocator: std.mem.Allocator, car: *RCObj, cdr: *RCObj) *RCObj {
-        return try RCObj.new(allocator, .{ .cons_cell = .{ .car = car, .cdr = cdr } });
+    fn new(allocator: std.mem.Allocator, car: *RCObj, cdr: *RCObj) !*RCObj {
+        return RCObj.new(allocator, .{ .cons_cell = .{ .car = car, .cdr = cdr } });
     }
 
     fn prepareToRemove(self: ConsCell, allocator: std.mem.Allocator) void {
@@ -66,7 +70,7 @@ const Symbol = struct {
         const name_memory = try allocator.alloc(u8, name.len);
         std.mem.copyForwards(u8, name_memory, name);
 
-        const rco = try RCObj.new(.{
+        const rco = try RCObj.new(allocator, .{
             .symbol = .{ .name = name_memory },
         });
 
@@ -78,6 +82,22 @@ const Symbol = struct {
     }
 };
 
-const Enviroment = std.ArrayHashMap(Symbol, *RCObj, true);
+const Enviroment = struct {
+    map: std.AutoHashMap(
+        Symbol,
+        *RCObj,
+    ),
 
-//pub fn read(str: []u8) !LispObj {} // TODO
+    pub fn prepareToRemove(self: Enviroment, allocator: std.mem.Allocator) void {
+        _ = self;
+        _ = allocator;
+    }
+};
+
+test "Создаём и удаляем объекты, ищем утечки памяти" {
+    const allocator = std.testing.allocator;
+    const sym_1 = try Symbol.new(allocator, "Hello!");
+    const sym_2 = try Symbol.new(allocator, "Friends!p");
+    var list = try ConsCell.new(allocator, sym_1, sym_2);
+    list.deleteReference(allocator);
+}
