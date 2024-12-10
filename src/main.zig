@@ -15,8 +15,7 @@ const RCObj = struct {
     pub fn new(allocator: std.mem.Allocator, obj: LispObj) !*RCObj {
         var rco = try allocator.create(RCObj);
 
-        rco.ref_counter = 1;
-        rco.obj = obj;
+        rco = .{ .ref_counter = 1, .obj = obj };
 
         return rco;
     }
