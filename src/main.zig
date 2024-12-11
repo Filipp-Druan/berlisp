@@ -80,14 +80,27 @@ const Symbol = struct {
 };
 
 const Enviroment = struct {
-    map: std.AutoHashMap(
-        Symbol,
+    map: EnvMap,
+    parent: RCObj, // В этом объекте обязательно должно быть другое окружение.
+
+    const EnvMap = std.AutoHashMap(
+        []u8,
         *RCObj,
-    ),
+    );
+
+    pub fn new(allocator: std.mem.Allocator, parent: RCObj) !*RCObj {
+        var env = try allocator.create(Enviroment);
+        const map = EnvMap.init(allocator);
+        env = .{ .map = map, .parent = parent };
+
+        return try RCObj.new(allocator, .{ .enviroment = env });
+    }
 
     pub fn prepareToRemove(self: Enviroment, allocator: std.mem.Allocator) void {
-        _ = self;
-        _ = allocator;
+        const iter = self.map.iterator();
+        while (iter.next()) |entry| {}
+
+        self.map.deinit();
     }
 };
 
