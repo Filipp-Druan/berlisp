@@ -60,8 +60,6 @@ const ConsCell = struct {
     }
 };
 
-const SymbolPackage = struct { symbols: std.StringHashMap(*RCObj) };
-
 const Symbol = struct {
     name: []const u8,
 
