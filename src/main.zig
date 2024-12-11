@@ -98,9 +98,11 @@ const Enviroment = struct {
 
     pub fn prepareToRemove(self: Enviroment, allocator: std.mem.Allocator) void {
         const iter = self.map.iterator();
-        while (iter.next()) |entry| {}
-
+        while (iter.next()) |entry| {
+            entry.value_ptr.deleteReference(allocator);
+        }
         self.map.deinit();
+        self.parent.deleteReference(allocator);
     }
 };
 
