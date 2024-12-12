@@ -22,7 +22,7 @@ const RCObj = struct {
 
     pub fn getReference(self: RCObj) *RCObj {
         self.ref_counter += 1;
-        return &self;
+        return self;
     }
 
     pub fn deleteReference(self: *RCObj, allocator: std.mem.Allocator) void {
