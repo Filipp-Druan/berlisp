@@ -88,6 +88,11 @@ const Enviroment = struct {
         *RCObj,
     );
 
+    const EnvError = error{
+        VariableUndefined,
+        VariableDefined,
+    };
+
     pub fn new(allocator: std.mem.Allocator, parent: RCObj) !*RCObj {
         var env = try allocator.create(Enviroment);
         const map = EnvMap.init(allocator);
@@ -103,6 +108,30 @@ const Enviroment = struct {
         }
         self.map.deinit();
         self.parent.deleteReference(allocator);
+    }
+
+    pub fn lookup(self: Enviroment, sym: Symbol) *RCObj {
+        const res = self.map.get(sym.name);
+        if (res) |obj| {
+            return obj.getReference();
+        } else {
+            return res;
+        }
+    }
+
+    pub fn setVar(self: Enviroment, allocator: std.mem.Allocator, var_symbol: Symbol, value: *RCObj) EnvError!void {
+        if (self.map.get(var_symbol.name)) |last_val| {
+            last_val.deleteReference(allocator);
+            self.map.put(var_symbol.name, value.getReference());
+        } else {
+            return EnvError.VariableUndefined;
+        }
+    }
+
+    pub fn defVar(self: Enviroment, var_symbol: Symbol, value: *RCObj) !void {
+        if (self.map.get(var_symbol.name)) {
+            return EnvError.VariableDefined;
+        } else {}
     }
 };
 
