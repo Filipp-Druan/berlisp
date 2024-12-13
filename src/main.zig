@@ -150,7 +150,9 @@ const Enviroment = struct {
     pub fn defVar(self: Enviroment, var_symbol: Symbol, value: *RCObj) !void {
         if (self.map.get(var_symbol.name)) {
             return EnvError.VariableDefined;
-        } else {}
+        } else {
+            self.map.put(var_symbol.name, value);
+        }
     }
 };
 
