@@ -100,7 +100,7 @@ const Symbol = struct {
 
 const Enviroment = struct {
     map: EnvMap,
-    parent: RCObj, // В этом объекте обязательно должно быть другое окружение.
+    parent: *RCObj, // В этом объекте обязательно должно быть другое окружение.
 
     const EnvMap = std.AutoHashMap(
         []u8,
