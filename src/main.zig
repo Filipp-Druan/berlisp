@@ -25,6 +25,25 @@ const RCObj = struct {
         return self;
     }
 
+    // Некоторые объекты передаются по ссылке, а некоторые копируются.
+    // Когда можно использовать эту функцию?
+    // 1) При передачи объекта в функцию.
+    // 2) При присваивании, или получаении значения переменной.
+    pub fn take(self: *RCObj, allocator: std.mem.Allocator) *RCObj {
+        switch (self.obj) {
+            .symbol => {
+                return self.getReference();
+            },
+            .cons_cell => {
+                return self.getReference();
+            },
+            .enviroment => {
+                return self.getReference();
+            },
+        }
+        _ = allocator;
+    }
+
     pub fn deleteReference(self: *RCObj, allocator: std.mem.Allocator) void {
         self.ref_counter -= 1;
         if (self.ref_counter == 0) {
