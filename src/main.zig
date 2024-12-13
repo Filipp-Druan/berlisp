@@ -20,7 +20,7 @@ const RCObj = struct {
         return rco;
     }
 
-    pub fn getReference(self: RCObj) *RCObj {
+    pub fn getReference(self: *RCObj) *RCObj {
         self.ref_counter += 1;
         return self;
     }
