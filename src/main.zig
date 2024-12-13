@@ -161,3 +161,18 @@ test "Создаём и удаляем объекты, ищем утечки п�
     var list = try ConsCell.new(allocator, sym_1, sym_2);
     list.deleteReference(allocator);
 }
+
+test "Проверяем, что если несколько раз взять ссылку на объект, адрес будет один и тот же" {
+    const allocator = std.testing.allocator;
+    const sym_1 = try Symbol.new(allocator, "Hello!");
+    const ref_1 = sym_1.getReference();
+    const ref_2 = sym_1.getReference();
+    const ref_3 = ref_1.getReference();
+    std.debug.assert(sym_1 == ref_1);
+    std.debug.assert(ref_1 == ref_2);
+    std.debug.assert(ref_2 == ref_3);
+    sym_1.deleteReference(allocator);
+    ref_1.deleteReference(allocator);
+    ref_2.deleteReference(allocator);
+    ref_3.deleteReference(allocator);
+}
