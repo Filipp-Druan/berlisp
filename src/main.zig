@@ -13,9 +13,9 @@ const RCObj = struct {
     obj: LispObj,
 
     pub fn new(allocator: std.mem.Allocator, obj: LispObj) !*RCObj {
-        var rco = try allocator.create(RCObj);
+        const rco = try allocator.create(RCObj);
 
-        rco = .{ .ref_counter = 1, .obj = obj };
+        rco.* = .{ .ref_counter = 1, .obj = obj };
 
         return rco;
     }
@@ -121,11 +121,12 @@ const Enviroment = struct {
     }
 
     pub fn prepareToRemove(self: Enviroment, allocator: std.mem.Allocator) void {
-        const iter = self.map.iterator();
+        var map = self.map;
+        var iter = map.iterator();
         while (iter.next()) |entry| {
-            entry.value_ptr.deleteReference(allocator);
+            entry.value_ptr.*.deleteReference(allocator);
         }
-        self.map.deinit();
+        map.deinit();
         self.parent.deleteReference(allocator);
     }
 
