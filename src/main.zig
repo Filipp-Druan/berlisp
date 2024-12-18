@@ -6,176 +6,78 @@ const LispObj = union(enum) {
     symbol: Symbol,
     cons_cell: ConsCell,
     enviroment: Enviroment,
+    str: Str,
+    number: Number,
 };
 
-const RCObj = struct {
-    ref_counter: isize,
+const MemoryManager = struct {
+    last_allocated_object: ?*GCObj,
+    allocator: std.mem.Allocator,
+
+    pub fn new(allocator: std.mem.Allocator) MemoryManager {
+        return MemoryManager {
+            .last_allocated_object = null,
+            .allocator = allocator,
+        }
+    }
+
+    pub fn makeGCObj(self: MemoryManager, obj: LispObj) !*GCObj {
+        var gco = try self.allocator.create(GCObj);
+        gco.obj = obj;
+        gco.last_obj = self.last_allocated_object;
+        self.last_allocated_object = gco;
+
+        return gco;
+    }
+
+    pub fn mark_all_not_reachable(self: MemoryManager) void {
+        var current_obj = self.last_allocated_object;
+        while (current_obj) {
+            current_obj.mark_not_reachable();
+        }
+    }
+};
+
+const GCObj = struct {
+    last_obj: ?*GCObj,
+    is_reachable: bool,
     obj: LispObj,
 
-    pub fn new(allocator: std.mem.Allocator, obj: LispObj) !*RCObj {
-        const rco = try allocator.create(RCObj);
-
-        rco.* = .{ .ref_counter = 1, .obj = obj };
-
-        return rco;
-    }
-
-    pub fn getReference(self: *RCObj) *RCObj {
-        self.ref_counter += 1;
-        return self;
-    }
-
-    // Некоторые объекты передаются по ссылке, а некоторые копируются.
-    // Когда можно использовать эту функцию?
-    // 1) При передачи объекта в функцию.
-    // 2) При присваивании, или получаении значения переменной.
-    pub fn take(self: *RCObj, allocator: std.mem.Allocator) *RCObj {
-        switch (self.obj) {
-            .symbol => {
-                return self.getReference();
+    pub fn recursively_mark_reachable(obj: *GCObj) void {
+        obj.is_reachable = true;
+        switch (obj.obj) {
+            .symbol => |sym| {
+                sym.name.recursively_mark_reachable();
             },
-            .cons_cell => {
-                return self.getReference();
+            .cons_cell => |cell| {
+                // TODO
             },
-            .enviroment => {
-                return self.getReference();
-            },
-        }
-        _ = allocator;
-    }
-
-    pub fn deleteReference(self: *RCObj, allocator: std.mem.Allocator) void {
-        self.ref_counter -= 1;
-        if (self.ref_counter == 0) {
-            switch (self.obj) {
-                .symbol => |sym| {
-                    sym.prepareToRemove(allocator);
-                    allocator.destroy(self);
-                },
-                .cons_cell => |cell| {
-                    cell.prepareToRemove(allocator);
-                    allocator.destroy(self);
-                },
-                .enviroment => |env| {
-                    env.prepareToRemove(allocator);
-                    allocator.destroy(self);
-                },
+            _ => {
+                // Todo
             }
         }
     }
-};
 
-const ConsCell = struct {
-    car: *RCObj,
-    cdr: *RCObj,
-
-    fn new(allocator: std.mem.Allocator, car: *RCObj, cdr: *RCObj) !*RCObj {
-        return RCObj.new(allocator, .{ .cons_cell = .{ .car = car, .cdr = cdr } });
-    }
-
-    fn prepareToRemove(self: ConsCell, allocator: std.mem.Allocator) void {
-        self.car.deleteReference(allocator);
-        self.cdr.deleteReference(allocator);
+    pub fn mark_not_reachable(self: *GCObj) void {
+        self.is_reachable = false;
     }
 };
 
 const Symbol = struct {
-    name: []const u8,
+    name: *GCObj, // Str
 
-    fn new(allocator: std.mem.Allocator, name: []const u8) !*RCObj {
-        const name_memory = try allocator.alloc(u8, name.len);
-        std.mem.copyForwards(u8, name_memory, name);
-
-        const rco = try RCObj.new(allocator, .{
-            .symbol = .{ .name = name_memory },
-        });
-
-        return rco;
-    }
-
-    fn prepareToRemove(self: Symbol, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
+    pub fn new(mem_man: MemoryManager, name: *GCObj) !*GCObj {
+        return try mem_man.makeGCObj(.{ .symbol = .{ .name = name } });
     }
 };
 
-const Enviroment = struct {
-    map: EnvMap,
-    parent: *RCObj, // В этом объекте обязательно должно быть другое окружение.
+const Str = struct {
+    string: []u8,
 
-    const EnvMap = std.AutoHashMap(
-        []u8,
-        *RCObj,
-    );
+    pub fn new(mem_man: MemoryManager, str: []u8) *GCObj {
+        var str_mem = mem_man.allocator.alloc(u8, str.len);
+        std.mem.copyForwards(u8, str_mem, str);
 
-    const EnvError = error{
-        VariableUndefined,
-        VariableDefined,
-    };
-
-    pub fn new(allocator: std.mem.Allocator, parent: RCObj) !*RCObj {
-        var env = try allocator.create(Enviroment);
-        const map = EnvMap.init(allocator);
-        env = .{ .map = map, .parent = parent };
-
-        return try RCObj.new(allocator, .{ .enviroment = env });
-    }
-
-    pub fn prepareToRemove(self: Enviroment, allocator: std.mem.Allocator) void {
-        var map = self.map;
-        var iter = map.iterator();
-        while (iter.next()) |entry| {
-            entry.value_ptr.*.deleteReference(allocator);
-        }
-        map.deinit();
-        self.parent.deleteReference(allocator);
-    }
-
-    pub fn lookup(self: Enviroment, sym: Symbol) *RCObj {
-        const res = self.map.get(sym.name);
-        if (res) |obj| {
-            return obj.getReference();
-        } else {
-            return res;
-        }
-    }
-
-    pub fn setVar(self: Enviroment, allocator: std.mem.Allocator, var_symbol: Symbol, value: *RCObj) EnvError!void {
-        if (self.map.get(var_symbol.name)) |last_val| {
-            last_val.deleteReference(allocator);
-            self.map.put(var_symbol.name, value.getReference());
-        } else {
-            return EnvError.VariableUndefined;
-        }
-    }
-
-    pub fn defVar(self: Enviroment, var_symbol: Symbol, value: *RCObj) !void {
-        if (self.map.get(var_symbol.name)) {
-            return EnvError.VariableDefined;
-        } else {
-            self.map.put(var_symbol.name, value);
-        }
+        return try mem_man.makeGCObj(.{ .str = str_mem });
     }
 };
-
-test "Создаём и удаляем объекты, ищем утечки памяти" {
-    const allocator = std.testing.allocator;
-    const sym_1 = try Symbol.new(allocator, "Hello!");
-    const sym_2 = try Symbol.new(allocator, "Friends!p");
-    var list = try ConsCell.new(allocator, sym_1, sym_2);
-    list.deleteReference(allocator);
-}
-
-test "Проверяем, что если несколько раз взять ссылку на объект, адрес будет один и тот же" {
-    const allocator = std.testing.allocator;
-    const sym_1 = try Symbol.new(allocator, "Hello!");
-    const ref_1 = sym_1.getReference();
-    const ref_2 = sym_1.getReference();
-    const ref_3 = ref_1.getReference();
-    std.debug.assert(sym_1 == ref_1);
-    std.debug.assert(ref_1 == ref_2);
-    std.debug.assert(ref_2 == ref_3);
-    sym_1.deleteReference(allocator);
-    ref_1.deleteReference(allocator);
-    ref_2.deleteReference(allocator);
-    ref_3.deleteReference(allocator);
-}
