@@ -47,13 +47,13 @@ const GCObj = struct {
         obj.is_reachable = true;
         switch (obj.obj) {
             .symbol => |sym| {
-                sym.mark_propogate();
+                sym.markPropogate();
             },
             .cons_cell => |cell| {
-                cell.mark_propogate();
+                cell.markPropogate();
             },
             .str => |str| {
-                str.mark_propogate();
+                str.markPropogate();
             },
 
             .number => {},
@@ -69,7 +69,7 @@ const ConsCell = struct {
     car: *GCObj,
     cdr: *GCObj,
 
-    pub fn mark_propogate(self: ConsCell) void {
+    pub fn markPropogate(self: ConsCell) void {
         self.car.recursivelyMarkReachable();
         self.cdr.recursivelyMarkReachable();
     }
@@ -82,7 +82,7 @@ const Symbol = struct {
         return try mem_man.makeGCObj(.{ .symbol = .{ .name = name } });
     }
 
-    pub fn mark_propogate(self: Symbol) void {
+    pub fn markPropogate(self: Symbol) void {
         self.name.recursivelyMarkReachable();
     }
 };
@@ -97,7 +97,29 @@ const Str = struct {
         return try mem_man.makeGCObj(.{ .str = str_mem });
     }
 
-    pub fn mark_propogate(self: Str) void {
+    pub fn markPropogate(self: Str) void {
         _ = self;
+    }
+};
+
+const Enviroment = struct {
+    map: EnvMap,
+    next: *GCObj,
+
+    const EnvMap = std.AutoHashMap([]u8, *GCObj);
+
+    pub fn new(mem_man: MemoryManager, next: *GCObj) !GCObj { // next - всегда Enviroment
+        const map = EnvMap.init(mem_man.allocator);
+        mem_man.makeGCObj(.{ .enviroment = .{
+            .map = map,
+            .next = next,
+        } });
+    }
+
+    pub fn markPropagate(self: Enviroment) void {
+        var iterator = self.map.iterator();
+        while (iterator.next()) |val| {
+            val.value_ptr.*.recursivelyMarkReachable();
+        }
     }
 };
