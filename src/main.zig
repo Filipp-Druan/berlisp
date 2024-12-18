@@ -47,11 +47,10 @@ const GCObj = struct {
         obj.is_reachable = true;
         switch (obj.obj) {
             .symbol => |sym| {
-                sym.name.recursively_mark_reachable();
+                sym.recursively_mark_reachable();
             },
             .cons_cell => |cell| {
-                cell.car.recursively_mark_reachable();
-                cell.cdr.recursively_mark_reachable();
+                cell.recursively_mark_reachable();
             },
             .str => {
                 // Todo
@@ -73,6 +72,11 @@ const GCObj = struct {
 const ConsCell = struct {
     car: *GCObj,
     cdr: *GCObj,
+
+    pub fn recursively_mark_reachable(self: ConsCell) void {
+        self.car.recursively_mark_reachable();
+        self.cdr.recursively_mark_reachable();
+    }
 };
 
 const Symbol = struct {
@@ -80,6 +84,11 @@ const Symbol = struct {
 
     pub fn new(mem_man: MemoryManager, name: *GCObj) !*GCObj {
         return try mem_man.makeGCObj(.{ .symbol = .{ .name = name } });
+    }
+
+    pub fn recursively_mark_reachable(self: Symbol) void {
+        self.car.recursively_mark_reachable();
+        self.cdr.recursively_mark_reachable();
     }
 };
 
