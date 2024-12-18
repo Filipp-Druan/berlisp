@@ -30,7 +30,7 @@ const MemoryManager = struct {
         return gco;
     }
 
-    pub fn mark_all_not_reachable(self: MemoryManager) void {
+    pub fn markAllNotReachable(self: MemoryManager) void {
         var current_obj = self.last_allocated_object;
         while (current_obj) {
             current_obj.mark_not_reachable();
@@ -43,7 +43,7 @@ const GCObj = struct {
     is_reachable: bool,
     obj: LispObj,
 
-    pub fn recursively_mark_reachable(obj: *GCObj) void {
+    pub fn recursivelyMarkReachable(obj: *GCObj) void {
         obj.is_reachable = true;
         switch (obj.obj) {
             .symbol => |sym| {
@@ -60,7 +60,7 @@ const GCObj = struct {
         }
     }
 
-    pub fn mark_not_reachable(self: *GCObj) void {
+    pub fn markNotReachable(self: *GCObj) void {
         self.is_reachable = false;
     }
 };
@@ -70,8 +70,8 @@ const ConsCell = struct {
     cdr: *GCObj,
 
     pub fn mark_propogate(self: ConsCell) void {
-        self.car.recursively_mark_reachable();
-        self.cdr.recursively_mark_reachable();
+        self.car.recursivelyMarkReachable();
+        self.cdr.recursivelyMarkReachable();
     }
 };
 
@@ -83,7 +83,7 @@ const Symbol = struct {
     }
 
     pub fn mark_propogate(self: Symbol) void {
-        self.name.recursively_mark_reachable();
+        self.name.recursivelyMarkReachable();
     }
 };
 
