@@ -15,10 +15,10 @@ const MemoryManager = struct {
     allocator: std.mem.Allocator,
 
     pub fn new(allocator: std.mem.Allocator) MemoryManager {
-        return MemoryManager {
+        return MemoryManager{
             .last_allocated_object = null,
             .allocator = allocator,
-        }
+        };
     }
 
     pub fn makeGCObj(self: MemoryManager, obj: LispObj) !*GCObj {
@@ -47,20 +47,16 @@ const GCObj = struct {
         obj.is_reachable = true;
         switch (obj.obj) {
             .symbol => |sym| {
-                sym.recursively_mark_reachable();
+                sym.mark_propogate();
             },
             .cons_cell => |cell| {
-                cell.recursively_mark_reachable();
+                cell.mark_propogate();
             },
-            .str => {
-                // Todo
-            },
-
-            .number => {
-
+            .str => |str| {
+                str.mark_propogate();
             },
 
-
+            .number => {},
         }
     }
 
@@ -73,7 +69,7 @@ const ConsCell = struct {
     car: *GCObj,
     cdr: *GCObj,
 
-    pub fn recursively_mark_reachable(self: ConsCell) void {
+    pub fn mark_propogate(self: ConsCell) void {
         self.car.recursively_mark_reachable();
         self.cdr.recursively_mark_reachable();
     }
@@ -86,7 +82,7 @@ const Symbol = struct {
         return try mem_man.makeGCObj(.{ .symbol = .{ .name = name } });
     }
 
-    pub fn recursively_mark_reachable(self: Symbol) void {
+    pub fn mark_propogate(self: Symbol) void {
         self.car.recursively_mark_reachable();
         self.cdr.recursively_mark_reachable();
     }
@@ -96,9 +92,13 @@ const Str = struct {
     string: []u8,
 
     pub fn new(mem_man: MemoryManager, str: []u8) *GCObj {
-        var str_mem = mem_man.allocator.alloc(u8, str.len);
+        const str_mem = mem_man.allocator.alloc(u8, str.len);
         std.mem.copyForwards(u8, str_mem, str);
 
         return try mem_man.makeGCObj(.{ .str = str_mem });
+    }
+
+    pub fn mark_propogate(self: Str) void {
+        _ = self;
     }
 };
