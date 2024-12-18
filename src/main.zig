@@ -83,8 +83,7 @@ const Symbol = struct {
     }
 
     pub fn mark_propogate(self: Symbol) void {
-        self.car.recursively_mark_reachable();
-        self.cdr.recursively_mark_reachable();
+        self.name.recursively_mark_reachable();
     }
 };
 
