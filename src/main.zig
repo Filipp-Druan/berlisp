@@ -50,17 +50,29 @@ const GCObj = struct {
                 sym.name.recursively_mark_reachable();
             },
             .cons_cell => |cell| {
-                // TODO
+                cell.car.recursively_mark_reachable();
+                cell.cdr.recursively_mark_reachable();
             },
-            _ => {
+            .str => {
                 // Todo
-            }
+            },
+
+            .number => {
+
+            },
+
+
         }
     }
 
     pub fn mark_not_reachable(self: *GCObj) void {
         self.is_reachable = false;
     }
+};
+
+const ConsCell = struct {
+    car: *GCObj,
+    cdr: *GCObj,
 };
 
 const Symbol = struct {
