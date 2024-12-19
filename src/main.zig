@@ -72,6 +72,26 @@ const GCObj = struct {
     pub fn markNotReachable(self: *GCObj) void {
         self.is_reachable = false;
     }
+
+    pub fn delete(self: *GCObj, mem_man: MemoryManager) void {
+        switch (self.obj) {
+            .symbol => |sym| {
+                sym.prepareToRemove(mem_man);
+            },
+            .cons_cell => |cell| {
+                cell.prepareToRemove(mem_man);
+            },
+            .str => |str| {
+                str.prepareToRemove(mem_man);
+            },
+            .number => {}, // Числа передаются по значению.
+            .enviroment => |env| {
+                env.prepareToRemove(mem_man);
+            },
+        }
+
+        mem_man.allocator.destroy(self);
+    }
 };
 
 const ConsCell = struct {
