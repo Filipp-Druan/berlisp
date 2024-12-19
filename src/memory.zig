@@ -20,12 +20,12 @@ pub const MemoryManager = struct {
 
     /// Создаёт новый менеджер памяти,
     /// у которого новый, пустой список всех выделенных объектов.
-    pub fn init(allocator: std.mem.Allocator) MemoryManager {
-        var mem_man = allocator.create(MemoryManager);
-        mem_man = .{
-            .last_allocated_object = null,
-            .allocator = allocator,
-        };
+    pub fn init(allocator: std.mem.Allocator) !*MemoryManager {
+        var mem_man = try allocator.create(MemoryManager);
+
+        mem_man.last_allocated_object = null;
+        mem_man.allocator = allocator;
+
         return mem_man;
     }
 
@@ -37,10 +37,11 @@ pub const MemoryManager = struct {
     /// Создаёт в куче новый GCObj из LispObj, добавляет
     /// его в список объектов, созданных данным менеджером памяти.
     pub fn makeGCObj(self: MemoryManager, obj: LispObj) !*GCObj {
+        var mem_man = self;
         var gco = try self.allocator.create(GCObj);
         gco.obj = obj;
-        gco.last_obj = self.last_allocated_object;
-        self.last_allocated_object = gco;
+        gco.last_obj = mem_man.last_allocated_object;
+        mem_man.last_allocated_object = gco;
 
         return gco;
     }
@@ -57,7 +58,7 @@ pub const MemoryManager = struct {
 
     /// Этот метод удаляет все объекты, созданные при помощи данного
     /// менеджера памяти.
-    pub fn deleteAll(self: MemoryManager) void {
+    pub fn deleteAll(self: *MemoryManager) void {
         var last_gco = self.last_allocated_object;
         while (last_gco) |obj| {
             last_gco = obj.last_obj;
@@ -99,7 +100,7 @@ pub const GCObj = struct {
     /// При этом, она не занимается поддержанием списка всех
     /// объектов. Если использовать эту функцию неправильно,
     /// может оборваться список всех объектов.
-    pub fn delete(gco: *GCObj, mem_man: MemoryManager) void {
+    pub fn delete(gco: *GCObj, mem_man: *MemoryManager) void {
         switch (gco.obj) {
             .symbol => |sym| {
                 sym.prepareToRemove(mem_man);

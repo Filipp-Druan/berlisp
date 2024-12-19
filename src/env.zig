@@ -22,9 +22,9 @@ pub const Environment = struct {
 
     const EnvMap = std.AutoHashMap([]u8, *GCObj);
 
-    pub fn new(mem_man: *MemoryManager, next: ?*GCObj) !GCObj { // next - всегда Environment
+    pub fn new(mem_man: *MemoryManager, next: ?*GCObj) !*GCObj { // next - всегда Environment
         const map = EnvMap.init(mem_man.allocator);
-        mem_man.makeGCObj(.{ .environment = .{
+        return try mem_man.makeGCObj(.{ .environment = .{
             .map = map,
             .next = next,
         } });
@@ -39,6 +39,15 @@ pub const Environment = struct {
 
     pub fn prepareToRemove(self: Environment, mem_man: *MemoryManager) void {
         _ = mem_man;
-        self.map.deinit();
+        var map = self.map;
+        map.deinit();
     }
 };
+
+test "create Environment" {
+    const mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    const env = try Environment.new(mem_man, null);
+    _ = env;
+}

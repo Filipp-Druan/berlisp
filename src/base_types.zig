@@ -22,7 +22,7 @@ pub const ConsCell = struct {
         self.cdr.recursivelyMarkReachable();
     }
 
-    pub fn prepareToRemove(self: ConsCell, mem_man: MemoryManager) void {
+    pub fn prepareToRemove(self: ConsCell, mem_man: *MemoryManager) void {
         _ = self;
         _ = mem_man;
     }
