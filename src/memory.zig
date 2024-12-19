@@ -21,10 +21,17 @@ pub const MemoryManager = struct {
     /// Создаёт новый менеджер памяти,
     /// у которого новый, пустой список всех выделенных объектов.
     pub fn init(allocator: std.mem.Allocator) MemoryManager {
-        return MemoryManager{
+        var mem_man = allocator.create(MemoryManager);
+        mem_man = .{
             .last_allocated_object = null,
             .allocator = allocator,
         };
+        return mem_man;
+    }
+
+    pub fn deinit(self: *MemoryManager) void {
+        self.deleteAll();
+        self.allocator.destroy(self);
     }
 
     /// Создаёт в куче новый GCObj из LispObj, добавляет

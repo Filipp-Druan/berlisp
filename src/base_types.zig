@@ -3,6 +3,7 @@ const berlisp = @import("berlisp.zig");
 
 const GCObj = berlisp.memory.GCObj;
 const MemoryManager = berlisp.memory.MemoryManager;
+const Environment = berlisp.env.Environment;
 
 pub const LispObj = union(enum) {
     symbol: Symbol,
@@ -30,12 +31,12 @@ pub const ConsCell = struct {
 pub const Symbol = struct {
     name: *GCObj, // Str
 
-    pub fn new(mem_man: MemoryManager, name: []u8) !*GCObj {
-        const name_str = Str.new(mem_man, name);
+    pub fn new(mem_man: *MemoryManager, name: []const u8) !*GCObj {
+        const name_str = try Str.new(mem_man, name);
         return try mem_man.makeGCObj(.{ .symbol = .{ .name = name_str } });
     }
 
-    pub fn fromStr(mem_man: MemoryManager, str: Str) !*GCObj {
+    pub fn fromStr(mem_man: *MemoryManager, str: Str) !*GCObj {
         return try mem_man.makeGCObj(.{ .symbol = .{ .name = str } });
     }
 
@@ -43,7 +44,7 @@ pub const Symbol = struct {
         self.name.recursivelyMarkReachable();
     }
 
-    pub fn prepareToRemove(self: Symbol, mem_man: MemoryManager) void {
+    pub fn prepareToRemove(self: Symbol, mem_man: *MemoryManager) void {
         _ = self;
         _ = mem_man;
     }
@@ -52,46 +53,19 @@ pub const Symbol = struct {
 pub const Str = struct {
     string: []u8,
 
-    pub fn new(mem_man: MemoryManager, str: []u8) !*GCObj {
-        const str_mem = mem_man.allocator.alloc(u8, str.len);
+    pub fn new(mem_man: *MemoryManager, str: []const u8) !*GCObj {
+        const str_mem = try mem_man.allocator.alloc(u8, str.len);
         std.mem.copyForwards(u8, str_mem, str);
 
-        return try mem_man.makeGCObj(.{ .str = str_mem });
+        return try mem_man.makeGCObj(.{ .str = .{ .string = str_mem } });
     }
 
     pub fn markPropogate(self: Str) void {
         _ = self;
     }
 
-    pub fn prepareToRemove(self: Str, mem_man: MemoryManager) void {
+    pub fn prepareToRemove(self: Str, mem_man: *MemoryManager) void {
         mem_man.allocator.free(self.string);
-    }
-};
-
-pub const Environment = struct {
-    map: EnvMap,
-    next: *GCObj, // всегда Environment
-
-    const EnvMap = std.AutoHashMap([]u8, *GCObj);
-
-    pub fn new(mem_man: MemoryManager, next: *GCObj) !GCObj { // next - всегда Environment
-        const map = EnvMap.init(mem_man.allocator);
-        mem_man.makeGCObj(.{ .environment = .{
-            .map = map,
-            .next = next,
-        } });
-    }
-
-    pub fn markPropagate(self: Environment) void {
-        var iterator = self.map.iterator();
-        while (iterator.next()) |val| {
-            val.value_ptr.*.recursivelyMarkReachable();
-        }
-    }
-
-    pub fn prepareToRemove(self: Environment, mem_man: MemoryManager) void {
-        _ = mem_man;
-        self.map.deinit();
     }
 };
 
