@@ -156,3 +156,85 @@ const Enviroment = struct {
         self.map.deinit();
     }
 };
+
+/// Число. Над ним можно производить арифметические операции.
+/// Может быть либо с плавающей точкой, либо целым.
+/// Если одно число было с плавающей точкой, то результат операции тоже
+/// будет таким.
+///
+/// Числа передаются не по ссылке, а по значению.
+const Number = union(enum) {
+    int: i64,
+    double: f64,
+
+    pub fn add(num_1: Number, num_2: Number) Number {
+        return switch (num_1) {
+            .double => |val_1| {
+                switch (num_2) {
+                    .double => |val_2| Number{ .double = val_1 + val_2 },
+                    .int => |val_2| Number{ .int = val_1 + @as(f64, val_2) },
+                }
+            },
+            .int => |val_1| {
+                switch (num_2) {
+                    .double => |val_2| Number{ .double = @as(f64, val_1) + val_2 },
+                    .int => |val_2| Number{ .int = val_1 + val_2 },
+                }
+            },
+        };
+    }
+
+    pub fn sub(num_1: Number, num_2: Number) Number {
+        return switch (num_1) {
+            .double => |val_1| {
+                switch (num_2) {
+                    .double => |val_2| Number{ .double = val_1 - val_2 },
+                    .int => |val_2| Number{ .int = val_1 - @as(f64, val_2) },
+                }
+            },
+            .int => |val_1| {
+                switch (num_2) {
+                    .double => |val_2| Number{ .double = @as(f64, val_1) - val_2 },
+                    .int => |val_2| Number{ .int = val_1 - val_2 },
+                }
+            },
+        };
+    }
+
+    pub fn mul(num_1: Number, num_2: Number) Number {
+        return switch (num_1) {
+            .double => |val_1| {
+                switch (num_2) {
+                    .double => |val_2| Number{ .double = val_1 * val_2 },
+                    .int => |val_2| Number{ .int = val_1 * @as(f64, val_2) },
+                }
+            },
+            .int => |val_1| {
+                switch (num_2) {
+                    .double => |val_2| Number{ .double = @as(f64, val_1) * val_2 },
+                    .int => |val_2| Number{ .int = val_1 * val_2 },
+                }
+            },
+        };
+    }
+
+    pub fn div(num_1: Number, num_2: Number) Number {
+        return switch (num_1) {
+            .double => |val_1| {
+                switch (num_2) {
+                    .double => |val_2| Number{ .double = val_1 / val_2 },
+                    .int => |val_2| Number{ .int = val_1 / @as(f64, val_2) },
+                }
+            },
+            .int => |val_1| {
+                switch (num_2) {
+                    .double => |val_2| Number{ .double = @as(f64, val_1) / val_2 },
+                    .int => |val_2| if (val_1 % val_2 == 0)
+                        val_1 / val_2
+                    else
+                        @as(f64, val_1) / @as(f64, val_2),
+                }
+            },
+        };
+    }
+};
