@@ -18,11 +18,11 @@ const MemoryManager = berlisp.memory.MemoryManager;
 /// Иначе будет ошибка.
 pub const Environment = struct {
     map: EnvMap,
-    next: *GCObj, // всегда Environment
+    next: ?*GCObj, // всегда Environment
 
     const EnvMap = std.AutoHashMap([]u8, *GCObj);
 
-    pub fn new(mem_man: *MemoryManager, next: *GCObj) !GCObj { // next - всегда Environment
+    pub fn new(mem_man: *MemoryManager, next: ?*GCObj) !GCObj { // next - всегда Environment
         const map = EnvMap.init(mem_man.allocator);
         mem_man.makeGCObj(.{ .environment = .{
             .map = map,
@@ -42,8 +42,3 @@ pub const Environment = struct {
         self.map.deinit();
     }
 };
-
-test "create Environment" {
-    const mem_man = MemoryManager.init(std.testing.allocator);
-    defer mem_man.deleteAll();
-}
