@@ -38,8 +38,9 @@ const MemoryManager = struct {
     /// памяти как недостижимые.
     pub fn markAllNotReachable(self: MemoryManager) void {
         var current_obj = self.last_allocated_object;
-        while (current_obj) {
-            current_obj.mark_not_reachable();
+        while (current_obj) |obj| {
+            obj.mark_not_reachable();
+            current_obj = obj.last_obj;
         }
     }
 };
