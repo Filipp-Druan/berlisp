@@ -157,3 +157,35 @@ pub const Number = union(enum) {
         };
     }
 };
+
+test "Number creating" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    const num = try mem_man.makeGCObj(.{ .number = .{ .int = 5 } });
+    std.debug.print("Объект аллоцирован\n", .{});
+    _ = num;
+    mem_man.deinit();
+}
+
+test "Str creating" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    const str = try Str.new(mem_man, "Строка");
+    _ = str;
+    mem_man.deinit();
+}
+
+test "Symbol creating" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    const sym = try Symbol.new(mem_man, "symbol");
+    _ = sym;
+    mem_man.deinit();
+}
+
+test "ConsCell creating" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+    const sym_1 = try Symbol.new(mem_man, "symbol-1");
+    const sym_2 = try Symbol.new(mem_man, "symbol-2");
+
+    const cell = try ConsCell.new(mem_man, sym_1, sym_2);
+    _ = cell;
+}
