@@ -73,6 +73,11 @@ const ConsCell = struct {
         self.car.recursivelyMarkReachable();
         self.cdr.recursivelyMarkReachable();
     }
+
+    pub fn prepareToRemove(self: ConsCell, mem_man: MemoryManager) void {
+        _ = self;
+        _ = mem_man;
+    }
 };
 
 const Symbol = struct {
@@ -84,6 +89,11 @@ const Symbol = struct {
 
     pub fn markPropogate(self: Symbol) void {
         self.name.recursivelyMarkReachable();
+    }
+
+    pub fn prepareToRemove(self: Symbol, mem_man: MemoryManager) void {
+        _ = self;
+        _ = mem_man;
     }
 };
 
@@ -100,11 +110,15 @@ const Str = struct {
     pub fn markPropogate(self: Str) void {
         _ = self;
     }
+
+    pub fn prepareToRemove(self: Str, mem_man: MemoryManager) void {
+        mem_man.allocator.free(self.string);
+    }
 };
 
 const Enviroment = struct {
     map: EnvMap,
-    next: *GCObj,
+    next: *GCObj, // всегда Enviroment
 
     const EnvMap = std.AutoHashMap([]u8, *GCObj);
 
@@ -121,5 +135,10 @@ const Enviroment = struct {
         while (iterator.next()) |val| {
             val.value_ptr.*.recursivelyMarkReachable();
         }
+    }
+
+    pub fn prepareToRemove(self: Enviroment, mem_man: MemoryManager) void {
+        _ = mem_man;
+        self.map.deinit();
     }
 };
