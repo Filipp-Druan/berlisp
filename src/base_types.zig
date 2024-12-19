@@ -161,7 +161,6 @@ pub const Number = union(enum) {
 test "Number creating" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     const num = try mem_man.makeGCObj(.{ .number = .{ .int = 5 } });
-    std.debug.print("Объект аллоцирован\n", .{});
     _ = num;
     mem_man.deinit();
 }
