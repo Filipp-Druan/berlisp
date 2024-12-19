@@ -61,7 +61,6 @@ pub const MemoryManager = struct {
     pub fn deleteAll(self: *MemoryManager) void {
         var last_gco = self.last_allocated_object;
         while (last_gco) |obj| {
-            std.debug.print("GCObj deleted", .{});
             last_gco = obj.last_obj;
             obj.delete(self);
         }
@@ -130,7 +129,6 @@ test "MemoryManager init and deinit" {
 test "MemoryManager creating object" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     const num = try mem_man.makeGCObj(.{ .number = .{ .int = 5 } });
-    std.debug.print("Объект аллоцирован\n", .{});
     _ = num;
     mem_man.deinit();
 }
