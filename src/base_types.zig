@@ -17,6 +17,13 @@ pub const ConsCell = struct {
     car: *GCObj,
     cdr: *GCObj,
 
+    pub fn new(mem_man: *MemoryManager, car: *GCObj, cdr: *GCObj) !*GCObj {
+        return try mem_man.makeGCObj(.{ .cons_cell = .{
+            .car = car,
+            .cdr = cdr,
+        } });
+    }
+
     pub fn markPropogate(self: ConsCell) void {
         self.car.recursivelyMarkReachable();
         self.cdr.recursivelyMarkReachable();
