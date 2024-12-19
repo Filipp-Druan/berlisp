@@ -73,8 +73,12 @@ const GCObj = struct {
         self.is_reachable = false;
     }
 
-    pub fn delete(self: *GCObj, mem_man: MemoryManager) void {
-        switch (self.obj) {
+    /// Эта функция удаляет GCObj.
+    /// При этом, она не занимается поддержанием списка всех
+    /// объектов. Если использовать эту функцию неправильно,
+    /// может оборваться список всех объектов.
+    pub fn delete(gco: *GCObj, mem_man: MemoryManager) void {
+        switch (gco.obj) {
             .symbol => |sym| {
                 sym.prepareToRemove(mem_man);
             },
@@ -90,7 +94,7 @@ const GCObj = struct {
             },
         }
 
-        mem_man.allocator.destroy(self);
+        mem_man.allocator.destroy(gco);
     }
 };
 
