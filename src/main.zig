@@ -139,7 +139,7 @@ const Symbol = struct {
 const Str = struct {
     string: []u8,
 
-    pub fn new(mem_man: MemoryManager, str: []u8) *GCObj {
+    pub fn new(mem_man: MemoryManager, str: []u8) !*GCObj {
         const str_mem = mem_man.allocator.alloc(u8, str.len);
         std.mem.copyForwards(u8, str_mem, str);
 
