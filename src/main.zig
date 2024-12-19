@@ -92,8 +92,13 @@ const ConsCell = struct {
 const Symbol = struct {
     name: *GCObj, // Str
 
-    pub fn new(mem_man: MemoryManager, name: *GCObj) !*GCObj {
-        return try mem_man.makeGCObj(.{ .symbol = .{ .name = name } });
+    pub fn new(mem_man: MemoryManager, name: []u8) !*GCObj {
+        const name_str = Str.new(mem_man, name);
+        return try mem_man.makeGCObj(.{ .symbol = .{ .name = name_str } });
+    }
+
+    pub fn fromStr(mem_man: MemoryManager, str: Str) !*GCObj {
+        return try mem_man.makeGCObj(.{ .symbol = .{ .name = str } });
     }
 
     pub fn markPropogate(self: Symbol) void {
