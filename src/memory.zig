@@ -9,7 +9,7 @@ pub const MemoryManager = struct {
 
     /// Создаёт новый менеджер памяти,
     /// у которого новый, пустой список всех выделенных объектов.
-    pub fn new(allocator: std.mem.Allocator) MemoryManager {
+    pub fn init(allocator: std.mem.Allocator) MemoryManager {
         return MemoryManager{
             .last_allocated_object = null,
             .allocator = allocator,
@@ -34,6 +34,16 @@ pub const MemoryManager = struct {
         while (current_obj) |obj| {
             obj.mark_not_reachable();
             current_obj = obj.last_obj;
+        }
+    }
+
+    /// Этот метод удаляет все объекты, созданные при помощи данного
+    /// менеджера памяти.
+    pub fn deleteAll(self: MemoryManager) void {
+        var last_gco = self.last_allocated_object;
+        while (last_gco) |obj| {
+            last_gco = obj.last_obj;
+            obj.delete(self);
         }
     }
 };
