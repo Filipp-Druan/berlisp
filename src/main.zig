@@ -5,7 +5,7 @@ pub fn main() !void {}
 const LispObj = union(enum) {
     symbol: Symbol,
     cons_cell: ConsCell,
-    enviroment: Enviroment,
+    environment: Environment,
     str: Str,
     number: Number,
 };
@@ -90,7 +90,7 @@ const GCObj = struct {
                 str.prepareToRemove(mem_man);
             },
             .number => {}, // Числа передаются по значению.
-            .enviroment => |env| {
+            .environment => |env| {
                 env.prepareToRemove(mem_man);
             },
         }
@@ -155,28 +155,28 @@ const Str = struct {
     }
 };
 
-const Enviroment = struct {
+const Environment = struct {
     map: EnvMap,
-    next: *GCObj, // всегда Enviroment
+    next: *GCObj, // всегда Environment
 
     const EnvMap = std.AutoHashMap([]u8, *GCObj);
 
-    pub fn new(mem_man: MemoryManager, next: *GCObj) !GCObj { // next - всегда Enviroment
+    pub fn new(mem_man: MemoryManager, next: *GCObj) !GCObj { // next - всегда Environment
         const map = EnvMap.init(mem_man.allocator);
-        mem_man.makeGCObj(.{ .enviroment = .{
+        mem_man.makeGCObj(.{ .environment = .{
             .map = map,
             .next = next,
         } });
     }
 
-    pub fn markPropagate(self: Enviroment) void {
+    pub fn markPropagate(self: Environment) void {
         var iterator = self.map.iterator();
         while (iterator.next()) |val| {
             val.value_ptr.*.recursivelyMarkReachable();
         }
     }
 
-    pub fn prepareToRemove(self: Enviroment, mem_man: MemoryManager) void {
+    pub fn prepareToRemove(self: Environment, mem_man: MemoryManager) void {
         _ = mem_man;
         self.map.deinit();
     }
