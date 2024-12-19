@@ -14,6 +14,8 @@ const MemoryManager = struct {
     last_allocated_object: ?*GCObj,
     allocator: std.mem.Allocator,
 
+    /// Создаёт новый менеджер памяти,
+    /// у которого новый, пустой список всех выделенных объектов.
     pub fn new(allocator: std.mem.Allocator) MemoryManager {
         return MemoryManager{
             .last_allocated_object = null,
@@ -21,6 +23,8 @@ const MemoryManager = struct {
         };
     }
 
+    /// Создаёт в куче новый GCObj из LispObj, добавляет
+    /// его в список объектов, созданных данным менеджером памяти.
     pub fn makeGCObj(self: MemoryManager, obj: LispObj) !*GCObj {
         var gco = try self.allocator.create(GCObj);
         gco.obj = obj;
@@ -30,6 +34,8 @@ const MemoryManager = struct {
         return gco;
     }
 
+    /// Помечает все объекты, созданные данным менеджером
+    /// памяти как недостижимые.
     pub fn markAllNotReachable(self: MemoryManager) void {
         var current_obj = self.last_allocated_object;
         while (current_obj) {
@@ -43,6 +49,8 @@ const GCObj = struct {
     is_reachable: bool,
     obj: LispObj,
 
+    /// Помечает объект достижимым, рекурсивно
+    /// помечает все объекты, на которые ссылается данный.
     pub fn recursivelyMarkReachable(obj: *GCObj) void {
         obj.is_reachable = true;
         switch (obj.obj) {
@@ -60,6 +68,7 @@ const GCObj = struct {
         }
     }
 
+    /// Помечает объект, как недостижимый.
     pub fn markNotReachable(self: *GCObj) void {
         self.is_reachable = false;
     }
