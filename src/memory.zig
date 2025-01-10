@@ -77,17 +77,10 @@ pub const GCObj = struct {
     pub fn recursivelyMarkReachable(obj: *GCObj) void {
         obj.is_reachable = true;
         switch (obj.obj) {
-            .symbol => |sym| {
-                sym.markPropogate();
-            },
-            .cons_cell => |cell| {
-                cell.markPropogate();
-            },
-            .str => |str| {
-                str.markPropogate();
-            },
-
             .number => {},
+            inline else => |val| {
+                val.markPropogate();
+            },
         }
     }
 
@@ -102,18 +95,9 @@ pub const GCObj = struct {
     /// может оборваться список всех объектов.
     pub fn delete(gco: *GCObj, mem_man: *MemoryManager) void {
         switch (gco.obj) {
-            .symbol => |sym| {
-                sym.prepareToRemove(mem_man);
-            },
-            .cons_cell => |cell| {
-                cell.prepareToRemove(mem_man);
-            },
-            .str => |str| {
-                str.prepareToRemove(mem_man);
-            },
             .number => {}, // Числа передаются по значению.
-            .environment => |env| {
-                env.prepareToRemove(mem_man);
+            inline else => |val| {
+                val.prepareToRemove();
             },
         }
 
