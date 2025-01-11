@@ -40,7 +40,6 @@ const Builder = struct {
         return self.stack.popOrNull();
     }
 
-    /// TODO в этом коде нет обработки ошибок.
     pub fn sym(self: *Builder, name: []const u8) *Builder {
         if (self.is_error) {
             return self;
