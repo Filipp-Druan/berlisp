@@ -47,6 +47,29 @@ const Builder = struct {
 
         const sym = base.Symbol.new(self.mem_man, name);
         self.stack.append(sym);
+
+        self.step += 1;
+        return self;
+    }
+
+    pub fn cons(self: *Builder) *Builder {
+        if (self.is_error) {
+            return self;
+        }
+
+        if (self.stack.items.len < 2) {
+            self.is_error = true;
+            return self;
+        }
+
+        const arg_2 = self.stack.pop();
+        const arg_1 = self.stack.pop();
+
+        const cell = base.ConsCell(self.mem_man, arg_1, arg_2);
+
+        self.stack.append(cell);
+        self.step += 1;
+
         return self;
     }
 };
