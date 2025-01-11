@@ -13,6 +13,9 @@ const GCObj = berlisp.memory.GCObj;
 const Builder = struct {
     mem_man: *MemoryManager,
     stack: Stack,
+    step: usize, // Эта переменная считает шаги. Если на каком-то шаге случается
+    // ошибка, они перестают считаться.
+    is_error: bool,
 
     const Stack = std.ArrayList(*GCObj);
 
@@ -21,6 +24,8 @@ const Builder = struct {
         builder.* = Builder{
             .mem_man = mem_man,
             .stack = Stack.init(mem_man.allocator),
+            .step = 1,
+            .is_error = bool,
         };
 
         return builder;
@@ -37,7 +42,12 @@ const Builder = struct {
 
     /// TODO в этом коде нет обработки ошибок.
     pub fn sym(self: *Builder, name: []const u8) *Builder {
-        self.stack.append(base.Symbol.new(self.mem_man, name));
+        if (self.is_error) {
+            return self;
+        }
+
+        const sym = base.Symbol.new(self.mem_man, name);
+        self.stack.append(sym);
         return self;
     }
 };
