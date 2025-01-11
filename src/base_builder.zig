@@ -74,11 +74,28 @@ const Builder = struct {
     }
 };
 
-test "Stack.init" {
+const assert = std.debug.assert();
+test "Builder.init" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
 
     const builder = try Builder.init(mem_man);
     builder.deinit();
 
     mem_man.deinit();
+}
+
+test "Builder.sym" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    const builder = try Builder.init(mem_man);
+    defer builder.deinit();
+
+    builder.sym("hello");
+
+    const res = builder.get();
+    assert(res != null);
+    assert(switch (res.?.obj) {
+        .symbol => |sym| {},
+    });
 }
