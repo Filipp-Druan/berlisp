@@ -97,7 +97,7 @@ pub const GCObj = struct {
         switch (gco.obj) {
             .number => {}, // Числа передаются по значению.
             inline else => |val| {
-                val.prepareToRemove();
+                val.prepareToRemove(mem_man);
             },
         }
 
