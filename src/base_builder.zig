@@ -25,7 +25,7 @@ const Builder = struct {
             .mem_man = mem_man,
             .stack = Stack.init(mem_man.allocator),
             .step = 1,
-            .is_error = bool,
+            .is_error = false,
         };
 
         return builder;
@@ -45,8 +45,8 @@ const Builder = struct {
             return self;
         }
 
-        const sym = base.Symbol.new(self.mem_man, name);
-        self.stack.append(sym);
+        const symbol = base.Symbol.new(self.mem_man, name);
+        self.stack.append(symbol);
 
         self.step += 1;
         return self;
@@ -96,6 +96,8 @@ test "Builder.sym" {
     const res = builder.get();
     assert(res != null);
     assert(switch (res.?.obj) {
-        .symbol => |sym| {},
+        .symbol => true,
+        else => false,
     });
+    assert(std.mem.eql(u8, res.?.obj.str.string, "hello"));
 }
