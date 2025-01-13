@@ -2,6 +2,12 @@
 //! Он позволяет при помощи fluent интерфейса
 //! создавать объекты Берлиспа. Всё это похоже
 //! на стековую машину Forth.
+//!
+//! У объекта Builder реализованы методы для
+//! создания объектов Berlisp. При этом, они
+//! кладутся на стек. Если при создании объекта
+//! возникнет ошибка, то она сохраняется, а всякие вычисления
+//! прерываются, и Билдер просто передаётся сквозь методы.
 
 const std = @import("std");
 const berlisp = @import("berlisp.zig");
@@ -15,7 +21,7 @@ const Builder = struct {
     stack: Stack,
     step: usize, // Эта переменная считает шаги. Если на каком-то шаге случается
     // ошибка, они перестают считаться.
-    is_error: bool,
+    err: ?anyerror,
 
     const Stack = std.ArrayList(*GCObj);
 
@@ -25,7 +31,7 @@ const Builder = struct {
             .mem_man = mem_man,
             .stack = Stack.init(mem_man.allocator),
             .step = 1,
-            .is_error = false,
+            .err = null,
         };
 
         return builder;
@@ -41,11 +47,15 @@ const Builder = struct {
     }
 
     pub fn sym(self: *Builder, name: []const u8) *Builder {
-        if (self.is_error) {
+        if (self.err == null) {
             return self;
         }
 
-        const symbol = base.Symbol.new(self.mem_man, name);
+        const symbol = base.Symbol.new(self.mem_man, name) catch |err| {
+            self.err = err;
+            return self;
+        };
+
         self.stack.append(symbol);
 
         self.step += 1;
@@ -53,7 +63,7 @@ const Builder = struct {
     }
 
     pub fn cons(self: *Builder) *Builder {
-        if (self.is_error) {
+        if (self.is_error == null) {
             return self;
         }
 
@@ -65,7 +75,10 @@ const Builder = struct {
         const arg_2 = self.stack.pop();
         const arg_1 = self.stack.pop();
 
-        const cell = base.ConsCell(self.mem_man, arg_1, arg_2);
+        const cell = base.ConsCell(self.mem_man, arg_1, arg_2) catch |err| {
+            self.err = err;
+            return self;
+        };
 
         self.stack.append(cell);
         self.step += 1;
