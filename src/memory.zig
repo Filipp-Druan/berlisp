@@ -103,7 +103,17 @@ pub const GCObj = struct {
 
         mem_man.allocator.destroy(gco);
     }
+
+    pub fn take(gco: *GCObj, mem_man: *MemoryManager) !*GCObj {
+        switch (gco.obj) {
+            .number => |num| return try num.copyGCObj(mem_man),
+            inline else => return gco,
+        }
+    }
 };
+
+const bt = berlisp.base_types;
+const assert = std.debug.assert;
 
 test "MemoryManager init and deinit" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
@@ -112,7 +122,24 @@ test "MemoryManager init and deinit" {
 
 test "MemoryManager creating object" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
-    const num = try mem_man.makeGCObj(.{ .number = .{ .int = 5 } });
-    _ = num;
+    _ = try bt.Number.new(mem_man, i64, 55);
+
     mem_man.deinit();
+}
+
+test "take Number" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    const initial_value = 5;
+    const new_value = 123;
+
+    const num_1 = try bt.Number.new(mem_man, i64, initial_value);
+    const num_2 = try num_1.take(mem_man);
+
+    assert(num_1 != num_2);
+
+    num_1.obj.number.int = new_value;
+
+    assert(num_2.obj.number.int == initial_value);
 }
