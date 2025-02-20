@@ -67,6 +67,10 @@ pub const Str = struct {
         return try mem_man.makeGCObj(.{ .str = .{ .string = str_mem } });
     }
 
+    pub fn copyGCObj(str: Str, mem_man: *MemoryManager) !*GCObj {
+        return try Str.new(mem_man, str.string);
+    }
+
     pub fn markPropogate(self: Str) void {
         _ = self;
     }
@@ -88,6 +92,27 @@ pub const Str = struct {
 pub const Number = union(enum) {
     int: i64,
     double: f64,
+
+    pub fn new(
+        mem_man: *MemoryManager,
+        comptime T: type,
+        num: T,
+    ) !*GCObj {
+        var number: Number = undefined;
+
+        switch (T) {
+            i64 => number = .{ .int = num },
+            f64 => number = .{ .double = num },
+            else => @compileError("Bad type of Number"),
+        }
+
+        return try mem_man.makeGCObj(.{ .number = number });
+    }
+
+    pub fn copyGCObj(number: Number, mem_man: *MemoryManager) !*GCObj {
+        const new_number = LispObj{ .number = number };
+        return try mem_man.makeGCObj(new_number);
+    }
 
     pub fn add(num_1: Number, num_2: Number) Number {
         return switch (num_1) {
