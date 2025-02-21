@@ -104,6 +104,8 @@ pub const GCObj = struct {
         mem_man.allocator.destroy(gco);
     }
 
+    /// Этот метод предназначен дл того, чтобы получать объект.
+    /// Числа передаются по значени, всё остальное - по ссылке.
     pub fn take(gco: *GCObj, mem_man: *MemoryManager) !*GCObj {
         switch (gco.obj) {
             .number => |num| return try num.copyGCObj(mem_man),
