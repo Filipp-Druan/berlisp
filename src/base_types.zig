@@ -188,7 +188,7 @@ pub const Number = union(enum) {
 
 test "Number creating" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
-    const num = try mem_man.makeGCObj(.{ .number = .{ .int = 5 } });
+    const num = try Number.new(mem_man, i64, 123);
     _ = num;
     mem_man.deinit();
 }
@@ -202,7 +202,7 @@ test "Str creating" {
 
 test "Symbol creating" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
-    const sym = try Symbol.new(mem_man, "symbol");
+    const sym = try mem_man.intern("symbol");
     _ = sym;
     mem_man.deinit();
 }
@@ -210,8 +210,8 @@ test "Symbol creating" {
 test "ConsCell creating" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     defer mem_man.deinit();
-    const sym_1 = try Symbol.new(mem_man, "symbol-1");
-    const sym_2 = try Symbol.new(mem_man, "symbol-2");
+    const sym_1 = try mem_man.intern("symbol-1");
+    const sym_2 = try mem_man.intern("symbol-2");
 
     const cell = try ConsCell.new(mem_man, sym_1, sym_2);
     _ = cell;
