@@ -2,9 +2,11 @@ const std = @import("std");
 const berlisp = @import("berlisp.zig");
 
 const LispObj = berlisp.base_types.LispObj;
+const bt = berlisp.base_types;
 
 /// Это менеджер памяти. Он управляет всем, что касается
 /// памяти: выделением памяти и сборкой мусора.
+/// Кроме того, менеджер памяти заведует символами.
 ///
 /// TODO:
 /// 1) Добавить полноценную сборку мусора.
@@ -17,6 +19,9 @@ const LispObj = berlisp.base_types.LispObj;
 pub const MemoryManager = struct {
     last_allocated_object: ?*GCObj,
     allocator: std.mem.Allocator,
+    symbols: SymbolTable,
+
+    const SymbolTable = std.StringHashMap(*bt.Symbol);
 
     /// Создаёт новый менеджер памяти,
     /// у которого новый, пустой список всех выделенных объектов.
@@ -25,12 +30,14 @@ pub const MemoryManager = struct {
 
         mem_man.last_allocated_object = null;
         mem_man.allocator = allocator;
+        mem_man.symbols = SymbolTable.init(allocator);
 
         return mem_man;
     }
 
     pub fn deinit(self: *MemoryManager) void {
         self.deleteAll();
+        self.symbols.deinit();
         self.allocator.destroy(self);
     }
 
@@ -44,6 +51,24 @@ pub const MemoryManager = struct {
         mem_man.last_allocated_object = gco;
 
         return gco;
+    }
+
+    /// Создаёт символ. Если символ уже есть, он просто его возвращает.
+    /// Принимает имя символа и возвращает сам символ.
+    /// Не абы какой GCObj, а именно символ в GCObj!
+    pub fn intern(self: *MemoryManager, name: []const u8) !*GCObj {
+        var symbol_table = self.symbols;
+
+        const symbol = symbol_table.get(name);
+
+        if (symbol) |sym| {
+            return sym;
+        } else {
+            const new_sym = try bt.Symbol.new(self, name);
+            symbol_table.put(name, new_sym);
+
+            return new_sym;
+        }
     }
 
     /// Помечает все объекты, созданные данным менеджером
@@ -115,7 +140,6 @@ pub const GCObj = struct {
     }
 };
 
-const bt = berlisp.base_types;
 const assert = std.debug.assert;
 
 test "MemoryManager init and deinit" {
