@@ -38,6 +38,10 @@ pub const ConsCell = struct {
 pub const Symbol = struct {
     name: *GCObj, // Str
 
+    /// Низкоуровневый метод создания символа.
+    /// Может создать несколько символов с одним именем.
+    /// А этого нам не надо.
+    /// Так что лучше использовать MemoryManager.intern
     pub fn new(mem_man: *MemoryManager, name: []const u8) !*GCObj {
         const name_str = try Str.new(mem_man, name);
         return try mem_man.makeGCObj(.{ .symbol = .{ .name = name_str } });
