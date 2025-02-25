@@ -3,7 +3,7 @@ const berlisp = @import("berlisp.zig");
 
 const LispObj = berlisp.base_types.LispObj;
 const bt = berlisp.base_types;
-const Builder = berlisp.builder;
+const Builder = berlisp.builder.Builder;
 /// Это менеджер памяти. Он управляет всем, что касается
 /// памяти: выделением памяти и сборкой мусора.
 /// Кроме того, менеджер памяти заведует символами.
