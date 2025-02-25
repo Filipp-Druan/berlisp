@@ -3,7 +3,7 @@ const berlisp = @import("berlisp.zig");
 
 const LispObj = berlisp.base_types.LispObj;
 const bt = berlisp.base_types;
-
+const Builder = berlisp.builder;
 /// Это менеджер памяти. Он управляет всем, что касается
 /// памяти: выделением памяти и сборкой мусора.
 /// Кроме того, менеджер памяти заведует символами.
@@ -20,8 +20,9 @@ pub const MemoryManager = struct {
     last_allocated_object: ?*GCObj,
     allocator: std.mem.Allocator,
     symbols: SymbolTable,
+    build: Builder,
 
-    const SymbolTable = std.StringHashMap(*bt.Symbol);
+    const SymbolTable = std.StringHashMap(*GCObj);
 
     /// Создаёт новый менеджер памяти,
     /// у которого новый, пустой список всех выделенных объектов.
@@ -31,6 +32,7 @@ pub const MemoryManager = struct {
         mem_man.last_allocated_object = null;
         mem_man.allocator = allocator;
         mem_man.symbols = SymbolTable.init(allocator);
+        mem_man.build = Builder{ .mem_man = mem_man };
 
         return mem_man;
     }
@@ -65,7 +67,7 @@ pub const MemoryManager = struct {
             return sym;
         } else {
             const new_sym = try bt.Symbol.new(self, name);
-            symbol_table.put(name, new_sym);
+            try symbol_table.put(name, new_sym);
 
             return new_sym;
         }
@@ -122,7 +124,8 @@ pub const GCObj = struct {
         switch (gco.obj) {
             .number => {}, // Числа передаются по значению.
             inline else => |val| {
-                val.prepareToRemove(mem_man);
+                var value = val;
+                value.prepareToRemove(mem_man);
             },
         }
 
@@ -130,7 +133,7 @@ pub const GCObj = struct {
     }
 
     /// Этот метод предназначен для того, чтобы получать объект,
-    /// коогда мы передаём его куда-то.
+    /// когда мы передаём его куда-то.
     /// Числа передаются по значени, всё остальное - по ссылке.
     pub fn take(gco: *GCObj, mem_man: *MemoryManager) !*GCObj {
         switch (gco.obj) {
@@ -150,6 +153,7 @@ test "MemoryManager init and deinit" {
 test "MemoryManager creating object" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     _ = try bt.Number.new(mem_man, i64, 55);
+    _ = try mem_man.build.number(i64, 5);
 
     mem_man.deinit();
 }
