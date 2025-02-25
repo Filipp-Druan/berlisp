@@ -9,6 +9,7 @@ const assert = std.debug.assert;
 
 const MemoryManager = berlisp.memory.MemoryManager;
 const GCObj = berlisp.memory.GCObj;
+const Environment = berlisp.env.Environment;
 
 pub const Builder = struct {
     mem_man: *MemoryManager,
@@ -27,6 +28,10 @@ pub const Builder = struct {
 
     pub fn str(self: *Builder, text: []const u8) !*GCObj {
         return bt.Str.new(self.mem_man, text);
+    }
+
+    pub fn env(self: *Builder, next: ?*GCObj) !*GCObj {
+        return Environment.new(self.mem_man, next);
     }
 };
 
@@ -62,4 +67,12 @@ test "build ConsCell" {
 
     assert(cell.obj.cons_cell.car == sym_1);
     assert(cell.obj.cons_cell.cdr == sym_2);
+}
+
+test "build Environment" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    const env_1 = try mem_man.build.env(null);
+    _ = try mem_man.build.env(env_1);
 }
