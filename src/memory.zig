@@ -59,7 +59,7 @@ pub const MemoryManager = struct {
     /// Принимает имя символа и возвращает сам символ.
     /// Не абы какой GCObj, а именно символ в GCObj!
     pub fn intern(self: *MemoryManager, name: []const u8) !*GCObj {
-        var symbol_table = self.symbols;
+        var symbol_table = &self.symbols;
 
         const symbol = symbol_table.get(name);
 
