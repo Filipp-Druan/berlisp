@@ -1,13 +1,5 @@
-//! В этом файле реализован билдер.
-//! Он позволяет при помощи fluent интерфейса
-//! создавать объекты Берлиспа. Всё это похоже
-//! на стековую машину Forth.
-//!
-//! У объекта Builder реализованы методы для
-//! создания объектов Berlisp. При этом, они
-//! кладутся на стек. Если при создании объекта
-//! возникнет ошибка, то она сохраняется, а всякие вычисления
-//! прерываются, и Билдер просто передаётся сквозь методы.
+//! В этом файле реализованы билдеры,
+//! которые позволяют создавать объекты.
 
 const std = @import("std");
 const berlisp = @import("berlisp.zig");
@@ -16,7 +8,12 @@ const base = berlisp.base_types;
 const MemoryManager = berlisp.memory.MemoryManager;
 const GCObj = berlisp.memory.GCObj;
 
-const Builder = struct {
+/// У объекта StackBuilder реализованы методы для
+/// создания объектов Berlisp. При этом, они
+/// кладутся на стек. Если при создании объекта
+/// возникнет ошибка, то она сохраняется, а всякие вычисления
+/// прерываются, и Билдер просто передаётся сквозь методы.
+const StackBuilder = struct {
     mem_man: *MemoryManager,
     stack: Stack,
     step: usize, // Эта переменная считает шаги. Если на каком-то шаге случается
@@ -25,9 +22,9 @@ const Builder = struct {
 
     const Stack = std.ArrayList(*GCObj);
 
-    pub fn init(mem_man: *MemoryManager) !*Builder {
-        const builder = try mem_man.allocator.create(Builder);
-        builder.* = Builder{
+    pub fn init(mem_man: *MemoryManager) !*StackBuilder {
+        const builder = try mem_man.allocator.create(StackBuilder);
+        builder.* = StackBuilder{
             .mem_man = mem_man,
             .stack = Stack.init(mem_man.allocator),
             .step = 1,
@@ -37,16 +34,16 @@ const Builder = struct {
         return builder;
     }
 
-    pub fn deinit(self: *Builder) void {
+    pub fn deinit(self: *StackBuilder) void {
         self.stack.deinit();
         self.mem_man.allocator.destroy(self);
     }
 
-    pub fn get(self: Builder) ?*GCObj {
+    pub fn get(self: StackBuilder) ?*GCObj {
         return self.stack.popOrNull();
     }
 
-    pub fn sym(self: *Builder, name: []const u8) *Builder {
+    pub fn sym(self: *StackBuilder, name: []const u8) *StackBuilder {
         if (self.err == null) {
             return self;
         }
@@ -62,7 +59,7 @@ const Builder = struct {
         return self;
     }
 
-    pub fn cons(self: *Builder) *Builder {
+    pub fn cons(self: *StackBuilder) *StackBuilder {
         if (self.is_error == null) {
             return self;
         }
@@ -91,7 +88,7 @@ const assert = std.debug.assert();
 test "Builder.init" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
 
-    const builder = try Builder.init(mem_man);
+    const builder = try StackBuilder.init(mem_man);
     builder.deinit();
 
     mem_man.deinit();
@@ -101,7 +98,7 @@ test "Builder.sym" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     defer mem_man.deinit();
 
-    const builder = try Builder.init(mem_man);
+    const builder = try StackBuilder.init(mem_man);
     defer builder.deinit();
 
     builder.sym("hello");
