@@ -58,9 +58,9 @@ const StackBuilder = struct {
         if (self.err) |err| {
             return err;
         }
-        if (self.pop()) |val| {
+        if (self.pop()) |value| {
             self.clear();
-            return val;
+            return value;
         } else {
             return StackBuiledrError.StackUnderflow;
         }
@@ -95,15 +95,23 @@ const StackBuilder = struct {
         }
     }
 
+    pub fn val(self: *StackBuilder, obj: *GCObj) *StackBuilder {
+        if (self.stepForward() == false) return self;
+
+        self.put(obj);
+
+        return self;
+    }
+
     pub fn symbol(self: *StackBuilder, name: []const u8) *StackBuilder {
-        if (!self.stepForward()) return self;
+        if (self.stepForward() == false) return self;
 
         self.put(self.mem_man.build.symbol(name));
         return self;
     }
 
     pub fn cons(self: *StackBuilder) *StackBuilder {
-        if (!self.stepForward()) return self;
+        if (self.stepForward() == false) return self;
 
         const car = self.pop();
         const cdr = self.pop();
