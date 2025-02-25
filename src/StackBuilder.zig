@@ -22,6 +22,10 @@ const StackBuilder = struct {
     // ошибка, они перестают считаться.
     err: ?anyerror,
 
+    const StackBuiledrError = error{
+        StackUnderflow,
+    };
+
     const Stack = std.ArrayList(*GCObj);
 
     pub fn init(mem_man: *MemoryManager) !*StackBuilder {
@@ -41,46 +45,49 @@ const StackBuilder = struct {
         self.mem_man.allocator.destroy(self);
     }
 
-    pub fn get(self: StackBuilder) ?*GCObj {
-        return self.stack.popOrNull();
-    }
-
-    pub fn sym(self: *StackBuilder, name: []const u8) *StackBuilder {
-        if (self.err == null) {
-            return self;
-        }
-
-        const symbol = base.Symbol.new(self.mem_man, name) catch |err| {
+    fn put(self: *StackBuilder, obj: anyerror!*GCObj) *StackBuilder {
+        const object = obj catch |err| {
             self.err = err;
             return self;
         };
 
-        self.stack.append(symbol);
+        self.stack.append(object);
+    }
 
-        self.step += 1;
+    pub fn pop(self: *StackBuilder) ?*GCObj {
+        if (self.stack.popOrNull()) |obj| {
+            return obj;
+        } else {
+            self.err = StackBuiledrError.StackUnderflow;
+            return null;
+        }
+    }
+
+    fn stepForward(self: *StackBuilder) bool {
+        if (self.err == null) {
+            self.step += 1;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    pub fn symbol(self: *StackBuilder, name: []const u8) *StackBuilder {
+        if (!self.stepForward()) return self;
+
+        self.put(self.mem_man.build.symbol(name));
         return self;
     }
 
     pub fn cons(self: *StackBuilder) *StackBuilder {
-        if (self.is_error == null) {
-            return self;
-        }
+        if (!self.stepForward()) return self;
 
-        if (self.stack.items.len < 2) {
-            self.is_error = true;
-            return self;
-        }
+        const car = self.pop();
+        const cdr = self.pop();
 
-        const arg_2 = self.stack.pop();
-        const arg_1 = self.stack.pop();
+        if (self.err) return self;
 
-        const cell = base.ConsCell(self.mem_man, arg_1, arg_2) catch |err| {
-            self.err = err;
-            return self;
-        };
-
-        self.stack.append(cell);
-        self.step += 1;
+        self.put(self.mem_man.build.cons(car, cdr));
 
         return self;
     }
