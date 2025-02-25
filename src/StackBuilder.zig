@@ -82,8 +82,8 @@ const StackBuilder = struct {
     pub fn cons(self: *StackBuilder) *StackBuilder {
         if (!self.stepForward()) return self;
 
-        const car = self.pop();
         const cdr = self.pop();
+        const car = self.pop();
 
         if (self.err) return self;
 
