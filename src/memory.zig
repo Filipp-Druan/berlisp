@@ -150,6 +150,13 @@ test "MemoryManager init and deinit" {
     mem_man.deinit();
 }
 
+test "intern" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    _ = try mem_man.intern("symbol");
+}
+
 test "MemoryManager creating object" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     _ = try bt.Number.new(mem_man, i64, 55);
