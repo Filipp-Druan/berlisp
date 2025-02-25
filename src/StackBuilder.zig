@@ -6,6 +6,7 @@
 const std = @import("std");
 const berlisp = @import("berlisp.zig");
 const base = berlisp.base_types;
+const assert = std.debug.assert;
 
 const MemoryManager = berlisp.memory.MemoryManager;
 const GCObj = berlisp.memory.GCObj;
@@ -24,6 +25,7 @@ const StackBuilder = struct {
 
     const StackBuiledrError = error{
         StackUnderflow,
+        ManyValues,
     };
 
     const Stack = std.ArrayList(*GCObj);
@@ -33,11 +35,17 @@ const StackBuilder = struct {
         builder.* = StackBuilder{
             .mem_man = mem_man,
             .stack = Stack.init(mem_man.allocator),
-            .step = 1,
+            .step = 0,
             .err = null,
         };
 
         return builder;
+    }
+
+    pub fn clear(self: *StackBuilder) void {
+        self.stack.clearRetainingCapacity();
+        self.err = null;
+        self.step = 0;
     }
 
     pub fn deinit(self: *StackBuilder) void {
@@ -45,17 +53,32 @@ const StackBuilder = struct {
         self.mem_man.allocator.destroy(self);
     }
 
-    fn put(self: *StackBuilder, obj: anyerror!*GCObj) *StackBuilder {
-        const object = obj catch |err| {
-            self.err = err;
-            return self;
-        };
-
-        self.stack.append(object);
+    pub fn end(self: *StackBuilder) !*GCObj {
+        if (self.stack.items.len > 1) return StackBuiledrError.ManyValues;
+        if (self.err) |err| {
+            return err;
+        }
+        if (self.pop()) |val| {
+            self.clear();
+            return val;
+        } else {
+            return StackBuiledrError.StackUnderflow;
+        }
     }
 
-    pub fn pop(self: *StackBuilder) ?*GCObj {
-        if (self.stack.popOrNull()) |obj| {
+    fn put(self: *StackBuilder, obj: anyerror!*GCObj) void {
+        const object = obj catch |err| {
+            self.err = err;
+            return;
+        };
+
+        self.stack.append(object) catch |err| {
+            self.err = err;
+        };
+    }
+
+    fn pop(self: *StackBuilder) ?*GCObj {
+        if (self.stack.pop()) |obj| {
             return obj;
         } else {
             self.err = StackBuiledrError.StackUnderflow;
@@ -82,18 +105,19 @@ const StackBuilder = struct {
     pub fn cons(self: *StackBuilder) *StackBuilder {
         if (!self.stepForward()) return self;
 
-        const cdr = self.pop();
         const car = self.pop();
+        const cdr = self.pop();
 
-        if (self.err) return self;
+        if (self.err) |_| return self;
 
-        self.put(self.mem_man.build.cons(car, cdr));
+        self.put(self.mem_man.build.cons(car.?, cdr.?)); // Строчкой выше
+        // мы уже проверили, что всё нормально.
+        // Если бы car или cdr был null, функция pop положила бы ошибку в билдер.
 
         return self;
     }
 };
 
-const assert = std.debug.assert();
 test "Builder.init" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
 
@@ -110,13 +134,22 @@ test "Builder.sym" {
     const builder = try StackBuilder.init(mem_man);
     defer builder.deinit();
 
-    builder.sym("hello");
+    const res = try builder.symbol("hello").end();
 
-    const res = builder.get();
-    assert(res != null);
-    assert(switch (res.?.obj) {
-        .symbol => true,
-        else => false,
-    });
-    assert(std.mem.eql(u8, res.?.obj.str.string, "hello"));
+    switch (res.obj) {
+        .symbol => |sym| {
+            assert(std.mem.eql(u8, sym.name.obj.str.string, "hello"));
+        },
+        else => assert(false), // Результат - не символ!
+    }
+}
+
+test "Builder.cons" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    const builder = try StackBuilder.init(mem_man);
+    defer builder.deinit();
+
+    _ = try builder.symbol("nil").symbol("foo").cons().symbol("quote").cons().end();
 }
