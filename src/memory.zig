@@ -21,6 +21,13 @@ pub const MemoryManager = struct {
     allocator: std.mem.Allocator,
     symbols: SymbolTable,
     build: Builder,
+    special_symbols: struct {
+        def_sym: *GCObj,
+        if_sym: *GCObj,
+        let_sym: *GCObj,
+        quote_sym: *GCObj,
+        fn_sym: *GCObj,
+    },
 
     const SymbolTable = std.StringHashMap(*GCObj);
 
@@ -33,8 +40,13 @@ pub const MemoryManager = struct {
         mem_man.allocator = allocator;
         mem_man.symbols = SymbolTable.init(allocator);
         mem_man.build = Builder{ .mem_man = mem_man };
+        mem_man.internSpecSymbols();
 
         return mem_man;
+    }
+
+    fn internSpecSymbols(self: MemoryManager) !void {
+        self.special_symbols = .{ .def_sym = self.intern("def"), .if_sym = self.intern("if"), .let_sym = self.intern("let"), .quote_sym = self.intern("quote"), .fn_sym = self.intern("fn") };
     }
 
     pub fn deinit(self: *MemoryManager) void {
