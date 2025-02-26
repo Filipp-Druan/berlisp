@@ -56,13 +56,13 @@ pub const Environment = struct {
     /// Какие-то значения передаются по значению, какие-то по ссылке.
     /// Вот тут я не уверен, как правильно сделать: нужно ли возвращать null,
     /// или Лучше вернуть ошибку?
-    pub fn take(self: *Environment, symbol: *GCObj, mem_man: MemoryManager) ?*GCObj {
+    pub fn takeValBySym(self: *Environment, symbol: *GCObj, mem_man: MemoryManager) ?*GCObj {
         if (self.map.get(symbol)) |val| {
             return val.take(mem_man);
         }
 
         if (self.next) |gco| {
-            return gco.obj.environment.take(symbol, mem_man);
+            return gco.obj.environment.takeValBySym(symbol, mem_man);
         } else {
             return null;
         }
