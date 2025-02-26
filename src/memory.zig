@@ -45,8 +45,12 @@ pub const MemoryManager = struct {
         return mem_man;
     }
 
-    fn internSpecSymbols(self: MemoryManager) !void {
-        self.special_symbols = .{ .def_sym = try self.intern("def"), .if_sym = try self.intern("if"), .let_sym = try self.intern("let"), .quote_sym = try self.intern("quote"), .fn_sym = try self.intern("fn") };
+    fn internSpecSymbols(self: *MemoryManager) !void {
+        self.special_symbols.def_sym = try self.intern("def");
+        self.special_symbols.if_sym = try self.intern("if");
+        self.special_symbols.let_sym = try self.intern("let");
+        self.special_symbols.quote_sym = try self.intern("quote");
+        self.special_symbols.fn_sym = try self.intern("fn");
     }
 
     pub fn deinit(self: *MemoryManager) void {
