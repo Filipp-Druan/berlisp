@@ -11,27 +11,36 @@ const MemoryManager = berlisp.memory.MemoryManager;
 const GCObj = berlisp.memory.GCObj;
 const Environment = berlisp.env.Environment;
 
+/// АХТУНГ! Эта структура используется как пространство имён
+/// для конструкторов символов.
+/// Она ВСЕГДА должна использоваться внутри менеджера
+/// памяти, как одно из его полей.
+/// НИКОГДА нельзя его копировать.
+/// НИКОГДА нельзя создавать его вне менеджера!
 pub const Builder = struct {
-    mem_man: *MemoryManager,
+    fn getMan(self: *Builder) *MemoryManager {
+        return @alignCast(@fieldParentPtr("build", self)); // АХТУНГ! Я не знаю тонкоостей того, как это работает!
+        // Нужно изучить выравнивание.
+    }
 
     pub fn number(self: *Builder, comptime T: type, num: T) !*GCObj {
-        return bt.Number.new(self.mem_man, T, num);
+        return bt.Number.new(self.getMan(), T, num);
     }
 
     pub fn cons(self: *Builder, car: *GCObj, cdr: *GCObj) !*GCObj {
-        return bt.ConsCell.new(self.mem_man, car, cdr);
+        return bt.ConsCell.new(self.getMan(), car, cdr);
     }
 
     pub fn symbol(self: *Builder, name: []const u8) !*GCObj {
-        return self.mem_man.intern(name);
+        return self.getMan().intern(name);
     }
 
     pub fn str(self: *Builder, text: []const u8) !*GCObj {
-        return bt.Str.new(self.mem_man, text);
+        return bt.Str.new(self.getMan(), text);
     }
 
     pub fn env(self: *Builder, next: ?*GCObj) !*GCObj {
-        return Environment.new(self.mem_man, next);
+        return Environment.new(self.getMan(), next);
     }
 };
 
