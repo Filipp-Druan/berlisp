@@ -39,7 +39,7 @@ pub const MemoryManager = struct {
         mem_man.last_allocated_object = null;
         mem_man.allocator = allocator;
         mem_man.symbols = SymbolTable.init(allocator);
-        mem_man.build = Builder{ .mem_man = mem_man };
+        mem_man.build = Builder{};
         try mem_man.internSpecSymbols();
 
         return mem_man;
