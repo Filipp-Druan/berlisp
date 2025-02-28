@@ -65,7 +65,7 @@ pub const Str = struct {
     string: []u8,
 
     pub fn new(mem_man: *MemoryManager, str: []const u8) !*GCObj {
-        const str_mem = try mem_man.allocator.dupe(str);
+        const str_mem = try mem_man.allocator.dupe(u8, str);
         errdefer mem_man.allocator.free(str_mem);
 
         return try mem_man.makeGCObj(.{ .str = .{ .string = str_mem } });
