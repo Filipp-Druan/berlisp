@@ -45,13 +45,13 @@ pub const List = struct {
         } });
     }
 
-    pub fn markPropogate(self: List) void {
+    pub fn markPropogate(self: *List) void {
         for (self.list.items) |value| {
             value.recursivelyMarkReachable();
         }
     }
 
-    pub fn prepareToRemove(self: List, mem_man: *MemoryManager) void {
+    pub fn prepareToRemove(self: *List, mem_man: *MemoryManager) void {
         _ = mem_man;
         self.list.deinit();
     }
@@ -93,15 +93,15 @@ pub const Str = struct {
         return try mem_man.makeGCObj(.{ .str = .{ .string = str_mem } });
     }
 
-    pub fn copyGCObj(str: Str, mem_man: *MemoryManager) !*GCObj {
+    pub fn copyGCObj(str: *Str, mem_man: *MemoryManager) !*GCObj {
         return try Str.new(mem_man, str.string);
     }
 
-    pub fn markPropogate(self: Str) void {
+    pub fn markPropogate(self: *Str) void {
         _ = self;
     }
 
-    pub fn prepareToRemove(self: Str, mem_man: *MemoryManager) void {
+    pub fn prepareToRemove(self: *Str, mem_man: *MemoryManager) void {
         mem_man.allocator.free(self.string);
     }
 };
