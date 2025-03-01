@@ -9,7 +9,7 @@ pub const LispObj = union(enum) {
     nil,
     symbol: Symbol,
     cons_cell: ConsCell,
-    list: List,
+    list: Vector,
     environment: Environment,
     str: Str,
     number: Number,
