@@ -37,14 +37,14 @@ pub const ConsCell = struct {
     }
 
     pub fn len(self: *ConsCell) isize {
-            switch (self.cdr.obj) {
-                .nil => return 1,
-                .cons_cell => |cell| {
-                    return 1 + cell.len();
-                },
-                .else => return 2,
-            }
+        switch (self.cdr.obj) {
+            .nil => return 1,
+            .cons_cell => |cell| {
+                return 1 + cell.len();
+            },
+            else => return 2,
         }
+    }
 };
 
 pub const Vector = struct {
