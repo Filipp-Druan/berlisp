@@ -55,6 +55,10 @@ pub const List = struct {
         _ = mem_man;
         self.list.deinit();
     }
+
+    pub fn len(self: *List) isize {
+        return self.list.items.len;
+    }
 };
 
 pub const Symbol = struct {
