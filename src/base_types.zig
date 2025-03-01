@@ -8,6 +8,7 @@ const Environment = berlisp.env.Environment;
 pub const LispObj = union(enum) {
     symbol: Symbol,
     cons_cell: ConsCell,
+    list: List,
     environment: Environment,
     str: Str,
     number: Number,
@@ -32,6 +33,27 @@ pub const ConsCell = struct {
     pub fn prepareToRemove(self: ConsCell, mem_man: *MemoryManager) void {
         _ = self;
         _ = mem_man;
+    }
+};
+
+pub const List = struct {
+    list: std.ArrayList(*GCObj),
+
+    pub fn new(mem_man: *MemoryManager) !*GCObj {
+        return try mem_man.makeGCObj(.{ .list = .{
+            .list = std.ArrayList(*GCObj).init(mem_man.allocator),
+        } });
+    }
+
+    pub fn markPropogate(self: List) void {
+        for (self.list.items) |value| {
+            value.recursivelyMarkReachable();
+        }
+    }
+
+    pub fn prepareToRemove(self: List, mem_man: *MemoryManager) void {
+        _ = mem_man;
+        self.list.deinit();
     }
 };
 
