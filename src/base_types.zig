@@ -25,12 +25,12 @@ pub const ConsCell = struct {
         } });
     }
 
-    pub fn markPropogate(self: ConsCell) void {
+    pub fn markPropogate(self: *ConsCell) void {
         self.car.recursivelyMarkReachable();
         self.cdr.recursivelyMarkReachable();
     }
 
-    pub fn prepareToRemove(self: ConsCell, mem_man: *MemoryManager) void {
+    pub fn prepareToRemove(self: *ConsCell, mem_man: *MemoryManager) void {
         _ = self;
         _ = mem_man;
     }
