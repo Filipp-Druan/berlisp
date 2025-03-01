@@ -6,6 +6,7 @@ const MemoryManager = berlisp.memory.MemoryManager;
 const Environment = berlisp.env.Environment;
 
 pub const LispObj = union(enum) {
+    nil,
     symbol: Symbol,
     cons_cell: ConsCell,
     list: List,
@@ -36,7 +37,7 @@ pub const ConsCell = struct {
     }
 };
 
-pub const List = struct {
+pub const Vector = struct {
     list: std.ArrayList(*GCObj),
 
     pub fn new(mem_man: *MemoryManager) !*GCObj {
@@ -45,18 +46,18 @@ pub const List = struct {
         } });
     }
 
-    pub fn markPropogate(self: *List) void {
+    pub fn markPropogate(self: *Vector) void {
         for (self.list.items) |value| {
             value.recursivelyMarkReachable();
         }
     }
 
-    pub fn prepareToRemove(self: *List, mem_man: *MemoryManager) void {
+    pub fn prepareToRemove(self: *Vector, mem_man: *MemoryManager) void {
         _ = mem_man;
         self.list.deinit();
     }
 
-    pub fn len(self: *List) isize {
+    pub fn len(self: *Vector) isize {
         return self.list.items.len;
     }
 };
