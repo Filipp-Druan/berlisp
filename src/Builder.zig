@@ -27,6 +27,10 @@ pub const Builder = struct {
         return bt.Number.new(self.getMan(), T, num);
     }
 
+    pub fn nil(self: *Builder) !*GCObj {
+        return bt.Nil.new(self.getMan());
+    }
+
     pub fn cons(self: *Builder, car: *GCObj, cdr: *GCObj) !*GCObj {
         return bt.ConsCell.new(self.getMan(), car, cdr);
     }
@@ -49,6 +53,13 @@ test "build Number" {
     defer mem_man.deinit();
 
     _ = try mem_man.build.number(i64, 5);
+}
+
+test "builb Nil" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    _ = try mem_man.build.nil();
 }
 
 test "build Symbol" {

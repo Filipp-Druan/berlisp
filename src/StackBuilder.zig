@@ -16,14 +16,14 @@ const GCObj = berlisp.memory.GCObj;
 /// кладутся на стек. Если при создании объекта
 /// возникнет ошибка, то она сохраняется, а всякие вычисления
 /// прерываются, и Билдер просто передаётся сквозь методы.
-const StackBuilder = struct {
+pub const StackBuilder = struct {
     mem_man: *MemoryManager,
     stack: Stack,
     step: usize, // Эта переменная считает шаги. Если на каком-то шаге случается
     // ошибка, они перестают считаться.
     err: ?anyerror,
 
-    const StackBuiledrError = error{
+    pub const StackBuiledrError = error{
         StackUnderflow,
         ManyValues,
     };
@@ -124,6 +124,14 @@ const StackBuilder = struct {
 
         return self;
     }
+
+    pub fn nil(self: *StackBuilder) *StackBuilder {
+        if (self.stepForward() == false) return self;
+
+        self.put(self.mem_man.build.nil());
+
+        return self;
+    }
 };
 
 test "Builder.init" {
@@ -159,5 +167,6 @@ test "Builder.cons" {
     const builder = try StackBuilder.init(mem_man);
     defer builder.deinit();
 
-    _ = try builder.symbol("nil").symbol("foo").cons().symbol("quote").cons().end();
+    const list = try builder.nil().symbol("foo").cons().symbol("quote").cons().end();
+    assert(list.obj.cons_cell.len() == 2);
 }

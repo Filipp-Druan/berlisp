@@ -139,6 +139,7 @@ pub const GCObj = struct {
     pub fn delete(gco: *GCObj, mem_man: *MemoryManager) void {
         switch (gco.obj) {
             .number => {}, // Числа передаются по значению.
+            .nil => {},
             inline else => |val| {
                 var value = val;
                 value.prepareToRemove(mem_man);

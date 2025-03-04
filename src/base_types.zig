@@ -4,9 +4,11 @@ const berlisp = @import("berlisp.zig");
 const GCObj = berlisp.memory.GCObj;
 const MemoryManager = berlisp.memory.MemoryManager;
 const Environment = berlisp.env.Environment;
+const StackBuilder = berlisp.stack_builder.StackBuilder;
+const assert = std.debug.assert;
 
 pub const LispObj = union(enum) {
-    nil,
+    nil: Nil,
     symbol: Symbol,
     cons_cell: ConsCell,
     list: Vector,
@@ -15,9 +17,19 @@ pub const LispObj = union(enum) {
     number: Number,
 };
 
+pub const Nil = struct {
+    pub fn new(mem_man: *MemoryManager) !*GCObj {
+        return mem_man.makeGCObj(.{ .nil = .{} });
+    }
+};
+
 pub const ConsCell = struct {
     car: *GCObj,
     cdr: *GCObj,
+
+    const ConsCellError = error{
+        ListToShort,
+    };
 
     pub fn new(mem_man: *MemoryManager, car: *GCObj, cdr: *GCObj) !*GCObj {
         return try mem_man.makeGCObj(.{ .cons_cell = .{
@@ -36,13 +48,23 @@ pub const ConsCell = struct {
         _ = mem_man;
     }
 
-    pub fn len(self: *ConsCell) isize {
+    pub fn len(self: *const ConsCell) isize {
         switch (self.cdr.obj) {
             .nil => return 1,
             .cons_cell => |cell| {
                 return 1 + cell.len();
             },
             else => return 2,
+        }
+    }
+
+    pub fn get(self: *const ConsCell, pos: isize) !*GCObj {
+        if (pos == 0) {
+            return self.car;
+        }
+        switch (self.cdr.obj) {
+            .cons_cell => |cell| return cell.get(pos - 1),
+            else => return ConsCellError.ListToShort,
         }
     }
 };
@@ -227,6 +249,13 @@ pub const Number = union(enum) {
     }
 };
 
+test "Nil creating" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    _ = try Nil.new(mem_man);
+}
+
 test "Number creating" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     const num = try Number.new(mem_man, i64, 123);
@@ -256,4 +285,20 @@ test "ConsCell creating" {
 
     const cell = try ConsCell.new(mem_man, sym_1, sym_2);
     _ = cell;
+}
+
+test "СonsCell get" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    const sb = try StackBuilder.init(mem_man);
+    defer sb.deinit();
+
+    const list = try sb.nil().symbol("Hello").cons().symbol("my").cons().symbol("friend").cons().end();
+
+    assert(try list.obj.cons_cell.get(0) == try mem_man.intern("friend"));
+    std.debug.print("Первый ассерт прошёл", .{});
+    assert(try list.obj.cons_cell.get(1) == try mem_man.intern("my"));
+    std.debug.print("Второй ассерт прошёл", .{});
+    assert(try list.obj.cons_cell.get(2) == try mem_man.intern("Hello"));
 }
