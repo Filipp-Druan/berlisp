@@ -48,6 +48,8 @@ pub const ConsCell = struct {
         _ = mem_man;
     }
 
+    /// Эта функция определяет длинну списка.
+    /// Работает также для точечных списков.
     pub fn len(self: *const ConsCell) isize {
         switch (self.cdr.obj) {
             .nil => return 1,
