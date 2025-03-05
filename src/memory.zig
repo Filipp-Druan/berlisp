@@ -21,7 +21,7 @@ pub const MemoryManager = struct {
     allocator: std.mem.Allocator,
     symbols: SymbolTable,
     build: Builder,
-    special_symbols: struct {
+    spec: struct { // Здесь хранятся символы специальных форм
         def_sym: *GCObj,
         if_sym: *GCObj,
         let_sym: *GCObj,
