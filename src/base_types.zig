@@ -29,6 +29,7 @@ pub const ConsCell = struct {
 
     const ConsCellError = error{
         ListToShort,
+        ListIsDotted,
     };
 
     pub fn new(mem_man: *MemoryManager, car: *GCObj, cdr: *GCObj) !*GCObj {
@@ -50,7 +51,7 @@ pub const ConsCell = struct {
 
     /// Эта функция определяет длинну списка.
     /// Работает также для точечных списков.
-    pub fn len(self: *const ConsCell) isize {
+    pub fn dottedLen(self: *const ConsCell) isize {
         switch (self.cdr.obj) {
             .nil => return 1,
             .cons_cell => |cell| {
@@ -60,6 +61,19 @@ pub const ConsCell = struct {
         }
     }
 
+    /// Возвращает длину неточечного списка.
+    /// Если список точечный, то возвращает ошибку
+    pub fn len(self: *const ConsCell) !isize {
+        switch (self.cdr.obj) {
+            .nil => return 1,
+            .cons_cell => |cell| {
+                return 1 + cell.len();
+            },
+            else => return ConsCellError.ListIsDotted,
+        }
+    }
+
+    /// Позволяет получить элемент по его индексу.
     pub fn get(self: *const ConsCell, pos: isize) !*GCObj {
         if (pos == 0) {
             return self.car;
