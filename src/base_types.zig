@@ -83,6 +83,26 @@ pub const ConsCell = struct {
             else => return ConsCellError.ListToShort,
         }
     }
+
+    pub fn first(self: *const ConsCell) *GCObj {
+        return self.car;
+    }
+
+    pub fn second(self: *const ConsCell) !*GCObj {
+        return self.get(1);
+    }
+
+    pub fn third(self: *const ConsCell) !*GCObj {
+        return self.get(2);
+    }
+
+    pub fn fourth(self: *const ConsCell) !*GCObj {
+        return self.get(3);
+    }
+
+    pub fn fifth(self: *const ConsCell) !*GCObj {
+        return self.get(4);
+    }
 };
 
 pub const Vector = struct {
