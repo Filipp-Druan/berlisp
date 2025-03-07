@@ -88,19 +88,19 @@ pub const ConsCell = struct {
         return self.car;
     }
 
-    pub fn second(self: *const ConsCell) !*GCObj {
+    pub fn second(self: *const ConsCell) ConsCellError!*GCObj {
         return self.get(1);
     }
 
-    pub fn third(self: *const ConsCell) !*GCObj {
+    pub fn third(self: *const ConsCell) ConsCellError!*GCObj {
         return self.get(2);
     }
 
-    pub fn fourth(self: *const ConsCell) !*GCObj {
+    pub fn fourth(self: *const ConsCell) ConsCellError!*GCObj {
         return self.get(3);
     }
 
-    pub fn fifth(self: *const ConsCell) !*GCObj {
+    pub fn fifth(self: *const ConsCell) ConsCellError!*GCObj {
         return self.get(4);
     }
 };
