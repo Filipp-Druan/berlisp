@@ -28,7 +28,7 @@ pub const Builder = struct {
     }
 
     pub fn nil(self: *Builder) !*GCObj {
-        return bt.Nil.new(self.getMan());
+        return self.getMan().nil;
     }
 
     pub fn cons(self: *Builder, car: *GCObj, cdr: *GCObj) !*GCObj {
