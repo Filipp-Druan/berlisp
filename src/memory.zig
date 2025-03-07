@@ -28,6 +28,7 @@ pub const MemoryManager = struct {
         quote_sym: *GCObj,
         fn_sym: *GCObj,
     },
+    nil: *GCObj,
 
     const SymbolTable = std.StringHashMap(*GCObj);
 
@@ -41,6 +42,7 @@ pub const MemoryManager = struct {
         mem_man.symbols = SymbolTable.init(allocator);
         mem_man.build = Builder{};
         try mem_man.internSpecSymbols();
+        mem_man.nil = bt.Nil.new(mem_man);
 
         return mem_man;
     }
