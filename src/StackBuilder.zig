@@ -168,5 +168,5 @@ test "Builder.cons" {
     defer builder.deinit();
 
     const list = try builder.nil().symbol("foo").cons().symbol("quote").cons().end();
-    assert(list.obj.cons_cell.len() == 2);
+    assert(try list.obj.cons_cell.len() == 2);
 }
