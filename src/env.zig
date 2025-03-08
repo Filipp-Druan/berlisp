@@ -7,6 +7,7 @@ const bt = berlisp.base_types;
 
 const EnvError = error{
     VariableIsAlreadyDefined,
+    VariableNotDefined,
 };
 
 /// Окружение - это объект, который связывает имена переменных
@@ -56,15 +57,15 @@ pub const Environment = struct {
     /// Какие-то значения передаются по значению, какие-то по ссылке.
     /// Вот тут я не уверен, как правильно сделать: нужно ли возвращать null,
     /// или Лучше вернуть ошибку?
-    pub fn takeValBySym(self: *Environment, symbol: *GCObj, mem_man: MemoryManager) ?*GCObj {
+    pub fn takeValBySym(self: *Environment, symbol: *GCObj, mem_man: *MemoryManager) !*GCObj {
         if (self.map.get(symbol)) |val| {
-            return val.take(mem_man);
+            return try val.take(mem_man);
         }
 
         if (self.next) |gco| {
             return gco.obj.environment.takeValBySym(symbol, mem_man);
         } else {
-            return null;
+            return EnvError.VariableNotDefined;
         }
     }
 
