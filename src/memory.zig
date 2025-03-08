@@ -42,17 +42,17 @@ pub const MemoryManager = struct {
         mem_man.symbols = SymbolTable.init(allocator);
         mem_man.build = Builder{};
         try mem_man.internSpecSymbols();
-        mem_man.nil = bt.Nil.new(mem_man);
+        mem_man.nil = try bt.Nil.new(mem_man);
 
         return mem_man;
     }
 
     fn internSpecSymbols(self: *MemoryManager) !void {
-        self.special_symbols.def_sym = try self.intern("def");
-        self.special_symbols.if_sym = try self.intern("if");
-        self.special_symbols.let_sym = try self.intern("let");
-        self.special_symbols.quote_sym = try self.intern("quote");
-        self.special_symbols.fn_sym = try self.intern("fn");
+        self.spec.def_sym = try self.intern("def");
+        self.spec.if_sym = try self.intern("if");
+        self.spec.let_sym = try self.intern("let");
+        self.spec.quote_sym = try self.intern("quote");
+        self.spec.fn_sym = try self.intern("fn");
     }
 
     pub fn deinit(self: *MemoryManager) void {
