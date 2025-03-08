@@ -27,7 +27,7 @@ pub const ConsCell = struct {
     car: *GCObj,
     cdr: *GCObj,
 
-    const ConsCellError = error{
+    pub const ConsCellError = error{
         ListToShort,
         ListIsDotted,
     };
@@ -67,7 +67,7 @@ pub const ConsCell = struct {
         switch (self.cdr.obj) {
             .nil => return 1,
             .cons_cell => |cell| {
-                return 1 + cell.len();
+                return 1 + try cell.len();
             },
             else => return ConsCellError.ListIsDotted,
         }
@@ -333,8 +333,8 @@ test "СonsCell get" {
     const list = try sb.nil().symbol("Hello").cons().symbol("my").cons().symbol("friend").cons().end();
 
     assert(try list.obj.cons_cell.get(0) == try mem_man.intern("friend"));
-    std.debug.print("Первый ассерт прошёл", .{});
+
     assert(try list.obj.cons_cell.get(1) == try mem_man.intern("my"));
-    std.debug.print("Второй ассерт прошёл", .{});
+
     assert(try list.obj.cons_cell.get(2) == try mem_man.intern("Hello"));
 }
