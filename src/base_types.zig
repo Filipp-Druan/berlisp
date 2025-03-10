@@ -330,7 +330,11 @@ test "СonsCell get" {
     const sb = try StackBuilder.init(mem_man);
     defer sb.deinit();
 
-    const list = try sb.nil().symbol("Hello").cons().symbol("my").cons().symbol("friend").cons().end();
+    const list = try sb.nil()
+        .sym("Hello").cons()
+        .symbol("my").cons()
+        .symbol("friend").cons()
+        .end();
 
     assert(try list.obj.cons_cell.get(0) == try mem_man.intern("friend"));
 
