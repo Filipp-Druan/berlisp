@@ -332,8 +332,8 @@ test "СonsCell get" {
 
     const list = try sb.nil()
         .sym("Hello").cons()
-        .symbol("my").cons()
-        .symbol("friend").cons()
+        .sym("my").cons()
+        .sym("friend").cons()
         .end();
 
     assert(try list.obj.cons_cell.get(0) == try mem_man.intern("friend"));
