@@ -103,10 +103,10 @@ pub const StackBuilder = struct {
         return self;
     }
 
-    pub fn symbol(self: *StackBuilder, name: []const u8) *StackBuilder {
+    pub fn sym(self: *StackBuilder, name: []const u8) *StackBuilder {
         if (self.stepForward() == false) return self;
 
-        self.put(self.mem_man.build.symbol(name));
+        self.put(self.mem_man.build.sym(name));
         return self;
     }
 
@@ -132,6 +132,12 @@ pub const StackBuilder = struct {
 
         return self;
     }
+
+    pub fn num(self: *StackBuilder, comptime T: type, number: T) *StackBuilder {
+        if (self.stepForward() == false) return self;
+
+        self.put(self.mem_man.build.number(T, number));
+    }
 };
 
 test "Builder.init" {
@@ -150,7 +156,7 @@ test "Builder.sym" {
     const builder = try StackBuilder.init(mem_man);
     defer builder.deinit();
 
-    const res = try builder.symbol("hello").end();
+    const res = try builder.sym("hello").end();
 
     switch (res.obj) {
         .symbol => |sym| {
@@ -167,6 +173,6 @@ test "Builder.cons" {
     const builder = try StackBuilder.init(mem_man);
     defer builder.deinit();
 
-    const list = try builder.nil().symbol("foo").cons().symbol("quote").cons().end();
+    const list = try builder.nil().sym("foo").cons().sym("quote").cons().end();
     assert(try list.obj.cons_cell.len() == 2);
 }
