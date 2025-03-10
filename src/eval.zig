@@ -141,25 +141,24 @@ test "eval if" {
     const global_env = try mem_man.build.env(null);
 
     const expr_1 = try sb.nil()
-        .sym("hello").cons()
-        .sym("world").cons()
-        .sym("true").cons()
+        .nil().sym("hello").cons().sym("quote").cons().cons()
+        .nil().sym("world").cons().sym("quote").cons().cons()
+        .nil().cons()
         .sym("if").cons()
         .end();
 
     const res_1 = try eval(expr_1, mem_man, global_env);
 
-    assert(res_1 == try mem_man.intern("world"));
+    assert(res_1 == try mem_man.intern("hello"));
 
     const expr_2 = try sb.nil()
-        .sym("hello").cons()
-        .sym("world").cons()
-        .sym("true").cons()
+        .nil().sym("hello").cons().sym("quote").cons().cons()
+        .nil().sym("world").cons().sym("quote").cons().cons()
+        .nil().sym("true").cons().sym("quote").cons().cons()
         .sym("if").cons()
-        .nil().cons()
         .end();
 
     const res_2 = try eval(expr_2, mem_man, global_env);
 
-    assert(res_2 == try mem_man.intern("hello"));
+    assert(res_2 == try mem_man.intern("world"));
 }
