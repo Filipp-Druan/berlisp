@@ -45,7 +45,7 @@ fn evalSpecial(code: *GCObj, mem_man: *MemoryManager, current_env: *GCObj) !*GCO
 
     if (first == mem_man.spec.quote_sym) {
         return evalQuote(code, mem_man);
-    } else if (first == mem_man.spec.quote_sym) {
+    } else if (first == mem_man.spec.if_sym) {
         return evalIf(code, mem_man, current_env);
     } else {
         return EvalError.NotImplemented;
@@ -126,9 +126,40 @@ test "eval quote" {
     defer sb.deinit();
     const global_env = try mem_man.build.env(null);
 
-    const expr = try sb.nil().symbol("hello").cons().symbol("quote").cons().end();
+    const expr = try sb.nil().sym("hello").cons().sym("quote").cons().end();
 
     const res = try eval(expr, mem_man, global_env);
 
     assert(res == try mem_man.intern("hello"));
+}
+
+test "eval if" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+    var sb = try StackBuilder.init(mem_man);
+    defer sb.deinit();
+    const global_env = try mem_man.build.env(null);
+
+    const expr_1 = try sb.nil()
+        .sym("hello").cons()
+        .sym("world").cons()
+        .sym("true").cons()
+        .sym("if").cons()
+        .end();
+
+    const res_1 = try eval(expr_1, mem_man, global_env);
+
+    assert(res_1 == try mem_man.intern("world"));
+
+    const expr_2 = try sb.nil()
+        .sym("hello").cons()
+        .sym("world").cons()
+        .sym("true").cons()
+        .sym("if").cons()
+        .nil().cons()
+        .end();
+
+    const res_2 = try eval(expr_2, mem_man, global_env);
+
+    assert(res_2 == try mem_man.intern("hello"));
 }
