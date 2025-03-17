@@ -53,7 +53,7 @@ pub const StackBuilder = struct {
         self.mem_man.allocator.destroy(self);
     }
 
-    pub fn end(self: *StackBuilder) !*GCObj {
+    pub fn build(self: *StackBuilder) !*GCObj {
         if (self.stack.items.len > 1) return StackBuiledrError.ManyValues;
         if (self.err) |err| {
             return err;
@@ -156,7 +156,7 @@ test "Builder.sym" {
     const builder = try StackBuilder.init(mem_man);
     defer builder.deinit();
 
-    const res = try builder.sym("hello").end();
+    const res = try builder.sym("hello").build();
 
     switch (res.obj) {
         .symbol => |sym| {
@@ -173,6 +173,6 @@ test "Builder.cons" {
     const builder = try StackBuilder.init(mem_man);
     defer builder.deinit();
 
-    const list = try builder.nil().sym("foo").cons().sym("quote").cons().end();
+    const list = try builder.nil().sym("foo").cons().sym("quote").cons().build();
     assert(try list.obj.cons_cell.len() == 2);
 }

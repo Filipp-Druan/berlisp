@@ -334,7 +334,7 @@ test "СonsCell get" {
         .sym("Hello").cons()
         .sym("my").cons()
         .sym("friend").cons()
-        .end();
+        .build();
 
     assert(try list.obj.cons_cell.get(0) == try mem_man.intern("friend"));
 

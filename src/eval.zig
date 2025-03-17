@@ -126,7 +126,7 @@ test "eval quote" {
     defer sb.deinit();
     const global_env = try mem_man.build.env(null);
 
-    const expr = try sb.nil().sym("hello").cons().sym("quote").cons().end();
+    const expr = try sb.nil().sym("hello").cons().sym("quote").cons().build();
 
     const res = try eval(expr, mem_man, global_env);
 
@@ -145,7 +145,7 @@ test "eval if" {
         .nil().sym("world").cons().sym("quote").cons().cons()
         .nil().cons()
         .sym("if").cons()
-        .end();
+        .build();
 
     const res_1 = try eval(expr_1, mem_man, global_env);
 
@@ -156,7 +156,7 @@ test "eval if" {
         .nil().sym("world").cons().sym("quote").cons().cons()
         .nil().sym("true").cons().sym("quote").cons().cons()
         .sym("if").cons()
-        .end();
+        .build();
 
     const res_2 = try eval(expr_2, mem_man, global_env);
 
