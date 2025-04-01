@@ -41,7 +41,7 @@ pub fn readSymbol(code: CodeIter, mem_man: *MemoryManager, pd: PropsData) ReadRe
     var buffer = Buffer.init(mem_man.allocator) catch |err| {
         return ReadRes.fail(err, iter);
     };
-    defer buffer.deinit(mem_man.allocator);
+    defer buffer.deinit();
 
     while (iter.peek()) |point| : (_ = iter.next()) {
         if (canBeInSymbol(point.code, pd)) { // Первый символ конечно обязан быть буквой, но мы можем его не проверять,
@@ -74,7 +74,9 @@ const Buffer = struct {
         return .{ .array = array };
     }
 
-    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: @This()) void {
+        const allocator = self.array.allocator;
+        self.array.deinit();
         allocator.destroy(self.array);
     }
 
@@ -107,17 +109,24 @@ const ReadError = error{
 
 test "read symbol" {
     const mem_man = try MemoryManager.init(std.testing.allocator);
-    defer mem_man.init();
+    defer mem_man.deinit();
 
-    const pd = PropsData.init(std.testing.allocator);
+    const pd = try PropsData.init(std.testing.allocator);
+    defer pd.deinit();
 
     const str = "sym";
 
-    const res = read(CodeIter{ .bytes = str }, mem_man, pd);
+    const etalon_sym = try mem_man.intern("sym");
+    const res = readFromString(str, mem_man, pd);
 
-    assert(res.obj == mem_man.intern("sym"));
+    assert(res.obj != null);
+    assert(res.obj.? == etalon_sym);
+}
 
-    assert(false);
+test "read list" {
+    const mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
 
-    std.debug.print("Read test ok", .{});
+    const pd = try PropsData.init(std.testing.allocator);
+    defer pd.deinit();
 }
