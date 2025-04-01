@@ -117,10 +117,16 @@ test "read symbol" {
     const str = "sym";
 
     const etalon_sym = try mem_man.intern("sym");
-    const res = read(CodeIter{ .bytes = str }, mem_man, pd);
+    const res = readFromString(str, mem_man, pd);
 
     assert(res.obj != null);
     assert(res.obj.? == etalon_sym);
+}
 
-    std.debug.print("Read test ok", .{});
+test "read list" {
+    const mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    const pd = try PropsData.init(std.testing.allocator);
+    defer pd.deinit();
 }
