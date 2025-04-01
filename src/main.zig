@@ -1,9 +1,9 @@
 const std = @import("std");
 
+const PropsData = @import("PropsData");
+
 const berlisp = @import("berlisp.zig");
 const read_module = berlisp.read_module;
-
-const PropsData = berlisp.PropsData;
 
 const assert = std.debug.assert;
 

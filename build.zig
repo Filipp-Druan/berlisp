@@ -125,6 +125,9 @@ pub fn build(b: *std.Build) void {
     lib_mod.addImport("code_point", zg.module("code_point"));
     lib_mod.addImport("PropsData", zg.module("PropsData"));
 
+    exe_mod.addImport("code_point", zg.module("code_point"));
+    exe_mod.addImport("PropsData", zg.module("PropsData"));
+
     const mecha = b.dependency("mecha", .{});
     exe.root_module.addImport("mecha", mecha.module("mecha"));
 }
