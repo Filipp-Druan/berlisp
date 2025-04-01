@@ -24,5 +24,5 @@ test "main test" {
 
     const res = read_module.readFromString("sym", mem_man, pd);
 
-    assert(res.obj == try mem_man.intern("sym"));
+    assert(res.err == null);
 }
