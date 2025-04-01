@@ -114,13 +114,16 @@ test "read symbol" {
     const pd = try PropsData.init(std.testing.allocator);
     defer pd.deinit();
 
-    const str = "sym";
-
     const etalon_sym = try mem_man.intern("sym");
-    const res = readFromString(str, mem_man, pd);
 
-    assert(res.obj != null);
-    assert(res.obj.? == etalon_sym);
+    const res_1 = readFromString("sym", mem_man, pd);
+    const res_2 = readFromString("  sym  ", mem_man, pd);
+
+    assert(res_1.obj != null);
+    assert(res_1.obj.? == etalon_sym);
+
+    assert(res_2.obj != null);
+    assert(res_2.obj.? == etalon_sym);
 }
 
 test "read list" {
