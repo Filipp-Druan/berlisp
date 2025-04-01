@@ -117,6 +117,7 @@ pub fn build(b: *std.Build) void {
     const test_exe = b.addTest(.{
         .name = "unit_tests",
         .root_source_file = b.path("src/main.zig"),
+        .target = target,
     });
     b.installArtifact(test_exe);
 
@@ -127,6 +128,9 @@ pub fn build(b: *std.Build) void {
 
     exe_mod.addImport("code_point", zg.module("code_point"));
     exe_mod.addImport("PropsData", zg.module("PropsData"));
+
+    test_exe.root_module.addImport("code_point", zg.module("code_point"));
+    test_exe.root_module.addImport("PropsData", zg.module("PropsData"));
 
     const mecha = b.dependency("mecha", .{});
     exe.root_module.addImport("mecha", mecha.module("mecha"));
