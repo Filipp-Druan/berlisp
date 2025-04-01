@@ -65,6 +65,7 @@ pub const Environment = struct {
         if (self.next) |gco| {
             return gco.obj.environment.takeValBySym(symbol, mem_man);
         } else {
+            std.debug.print("Этот символ не определён: {s}", .{symbol.obj.symbol.name.obj.str.string});
             return EnvError.VariableNotDefined;
         }
     }

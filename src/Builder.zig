@@ -35,7 +35,7 @@ pub const Builder = struct {
         return bt.ConsCell.new(self.getMan(), car, cdr);
     }
 
-    pub fn symbol(self: *Builder, name: []const u8) !*GCObj {
+    pub fn sym(self: *Builder, name: []const u8) !*GCObj {
         return self.getMan().intern(name);
     }
 
@@ -66,7 +66,7 @@ test "build Symbol" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     defer mem_man.deinit();
 
-    _ = try mem_man.build.symbol("zig");
+    _ = try mem_man.build.sym("zig");
 }
 
 test "build Str" {
@@ -80,8 +80,8 @@ test "build ConsCell" {
     var mem_man = try MemoryManager.init(std.testing.allocator);
     defer mem_man.deinit();
 
-    const sym_1 = try mem_man.build.symbol("sym-1");
-    const sym_2 = try mem_man.build.symbol("sym-2");
+    const sym_1 = try mem_man.build.sym("sym-1");
+    const sym_2 = try mem_man.build.sym("sym-2");
 
     const cell = try mem_man.build.cons(sym_1, sym_2);
 
