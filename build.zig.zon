@@ -44,6 +44,10 @@
             .url = "https://codeberg.org/atman/zg/archive/master.tar.gz",
             .hash = "zg-0.13.5-oGqU3I6Z7QLV3PcngiIPop2sAiHj740sK36VsXmYUMAp",
         },
+        .exre = .{
+            .url = "git+https://git.sr.ht/~leon_plickat/zig-exre#565ff0a83ea62389714ad439c49fa6bfdc21f5a9",
+            .hash = "exre-0.1.0-AAAAAC5nAwDGWv-NjdWF3xygJtxdWGCXfNDjAzQAKbd1",
+        },
     },
     .paths = .{
         "build.zig",

@@ -5,7 +5,7 @@ const PropsData = @import("PropsData");
 
 const exre = @import("exre");
 
-const berlisp = @import("berlisp.zig");
+const berlisp = @import("../berlisp.zig");
 
 const base_types = berlisp.base_types;
 const mem = berlisp.memory;
@@ -17,68 +17,133 @@ const Allocator = std.mem.Allocator;
 const MemoryManager = mem.MemoryManager;
 const GCObj = mem.GCObj;
 
+const CodePoint = code_point.CodePoint;
 const CodeIter = code_point.Iterator;
 
 const Regex = exre.Regex(.{});
 
 /// Это ленивый лексический анализатор. Он работает как итератор.
 /// Считывает и выдаёт токены по одному.
+///
+/// У нас есть множество процедур, которые могут считать лексему, а могут не считать.
+/// Если лексему считать получилось, то процедура устанавливает новое состояние лексера,
+/// а в противном случае оставляет его как есть.
 const Lexer = struct {
     code: CodeIter,
-    current: ?Token,
     pd: PropsData,
 
     pub fn init(code: CodeIter, pd: PropsData) Lexer {
         const lexer = Lexer{
             .code = code,
-            .current = null,
             .pd = pd,
         };
 
         return lexer;
     }
 
-    pub fn next(self: *Lexer) Token {
-        if (self.current) |token| {
-            self.current = null;
-            return token;
+    pub fn next(self: *Lexer) !Token {
+        switch (self.readEof()) {
+            .tok => |token| return token,
+            .fail => {},
+        }
+        switch (self.readSymbol()) {
+            .tok => |token| return token,
+            .fail => {},
+        }
+        switch (self.readOpenBracket()) {
+            .tok => |token| return token,
+            .fail => {},
+        }
+        switch (self.readCloseBracket()) {
+            .tok => |token| return token,
+            .fail => {},
+        }
+
+        return LexError.CantRead;
+    }
+
+    fn readEof(self: *Lexer) Res {
+        var code = self.code;
+        if (code.next()) |_| {
+            return Res.fail;
         } else {
-            self.readNext();
+            return .{ .tok = Token{
+                .tag = .Eof,
+                .str = "",
+                .start = code.i,
+                .end = code.i,
+            } };
         }
     }
 
-    fn readNext(self: *Lexer) void {
-        var code = &self.code;
-        while (code.peek()) |point| {
-            if (self.pd.isWhitespace(point.code)) {
-                code.next();
-                continue;
-            }
-
-            if (isSymbolStartChar(code, self.pd)) {}
-        }
-    }
-
-    ///
-    fn readSymbol(self: *Lexer) void {
-        var code = &self.code;
+    fn readOpenBracket(self: *Lexer) Res {
+        var code = self.code;
         const start = code.i;
 
-        while (code.peek()) |point| {
-            if (isSymbolBodyChar(point, self.pd)) {
-                code.next(); // Мы продвигаемся по итератору, и меняем его.
-                continue;
+        if (isOpenBracket(code.next())) {
+            var lexer = self;
+            lexer.code = code;
+
+            return Res.success(.OpenBracket, start, code);
+        } else {
+            return Res.fail;
+        }
+    }
+
+    fn readCloseBracket(self: *Lexer) Res {
+        var code = self.code;
+        const start = code.i;
+
+        if (isCloseBracket(code.next())) {
+            var lexer = self;
+            lexer.code = code;
+
+            return Res.success(.CloseBracket, start, code);
+        } else {
+            return Res.fail;
+        }
+    }
+
+    fn readSymbol(self: *Lexer) Res {
+        var code = self.code;
+        const start = code.i;
+
+        if (isSymbolStartPoint(code.next(), self.pd)) {
+            // Ничего не делаем.
+        } else {
+            return Res.fail;
+        }
+
+        while (true) {
+            if (isSymbolStartPoint(code.next(), self.pd)) {
+                // Ничего не делаем.
             } else {
                 break;
             }
         }
 
-        self.current = Token{
-            .tag = TokenTag.Symbol,
+        var lexer = self;
+        lexer.code = code;
+
+        return Res.success(.Symbol, start, code);
+    }
+};
+
+const LexError = error{
+    CantRead,
+};
+
+const Res = union(enum) {
+    tok: Token,
+    fail,
+
+    pub fn success(tag: TokenTag, start: u32, code: CodeIter) Res {
+        return .{ .tok = .{
+            .tag = tag,
             .str = getSliceToNext(code, start),
             .start = start,
             .end = posOfNext(code),
-        };
+        } };
     }
 };
 
@@ -90,22 +155,51 @@ fn getSliceToNext(code: CodeIter, start: u32) []const u8 {
     return getSlice(code, start, posOfNext(code));
 }
 
-fn isSymbolStartChar(cp: u21, pd: PropsData) bool {
-    return pd.isAlphabetic(cp) or pd.isMath(cp);
+fn isSymbolStartPoint(cp: ?CodePoint, pd: PropsData) bool {
+    if (cp) |point| {
+        const code = point.code;
+        return pd.isAlphabetic(code) or
+            code == '+' or
+            code == '-' or
+            code == '*' or
+            code == '/' or
+            code == '<' or
+            code == '=' or
+            code == '>';
+    } else {
+        return false;
+    }
 }
 
-fn isSymbolBodyChar(cp: u21, pd: PropsData) bool {
-    return pd.isAlphabetic(cp) or
-        pd.isMath(cp) or
-        pd.isDecimal(cp);
+fn isSymbolBodyPoint(cp: ?CodePoint, pd: PropsData) bool {
+    if (cp) |point| {
+        const code = point.code;
+
+        return isSymbolStartPoint(cp, pd) or pd.isDecimal(code);
+    } else {
+        return false;
+    }
 }
 
-fn isOpenBracket(cp: u21) bool {
-    return cp == '(' or cp == '[';
+fn isOpenBracket(cp: ?CodePoint) bool {
+    if (cp) |point| {
+        const code = point.code;
+        return code == '(' or code == '[';
+    } else {
+        return false;
+    }
+}
+
+fn isCloseBracket(cp: ?CodePoint) bool {
+    if (cp) |point| {
+        const code = point.code;
+        return code == ')' or code == ']';
+    } else {
+        return false;
+    }
 }
 
 fn posOfNext(code: CodeIter) u32 {
-    code.next();
     return code.i;
 }
 
@@ -117,10 +211,31 @@ const Token = struct {
 };
 
 const TokenTag = enum {
+    Eof,
     Symbol,
     OpenBracket,
     CloseBracket,
 };
+
+test "getSliceToNext" {
+    var iter = CodeIter{ .bytes = "abcd" };
+
+    _ = iter.next();
+
+    const start = iter.i;
+    _ = iter.next();
+    _ = iter.next();
+
+    const res = getSliceToNext(iter, start);
+
+    std.debug.print("\nres = {d}\n", .{res});
+
+    const ref = "bc";
+
+    std.debug.print("\nref = {d}\n", .{ref});
+
+    try std.testing.expectEqualStrings(ref, res);
+}
 
 test "Lexer.init" {
     const mem_man = try MemoryManager.init(std.testing.allocator);
@@ -140,10 +255,18 @@ test "Lexer.next" {
     const pd = try PropsData.init(std.testing.allocator);
     defer pd.deinit();
 
-    const code = CodeIter{ .bytes = "sym" };
+    const code = CodeIter{ .bytes = "(sym)" };
     var lexer = Lexer.init(code, pd);
 
-    const token = lexer.next();
+    const obt = try lexer.next();
+    const st = try lexer.next();
+    const cbt = try lexer.next();
 
-    std.testing.expectEqual("sym", token.str);
+    std.debug.print("obt.str = {s}\n", .{obt.str});
+    std.debug.print("st.str = {s}\n", .{st.str});
+    std.debug.print("obt.str = {s}\n", .{cbt.str});
+
+    try std.testing.expectEqualStrings("(", obt.str);
+    try std.testing.expectEqualStrings("sym", st.str);
+    try std.testing.expectEqualStrings(")", cbt.str);
 }
