@@ -4,5 +4,6 @@ pub const env = @import("env.zig");
 pub const builder = @import("Builder.zig");
 pub const stack_builder = @import("StackBuilder.zig");
 pub const read_module = @import("read.zig");
+pub const lexer = @import("reader/lexer.zig");
 //pub const eval = @import("eval.zig");
 //pub const functions = @import("functoins.zig");
