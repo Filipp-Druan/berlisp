@@ -20,15 +20,13 @@ const GCObj = mem.GCObj;
 const CodePoint = code_point.CodePoint;
 const CodeIter = code_point.Iterator;
 
-const Regex = exre.Regex(.{});
-
 /// Это ленивый лексический анализатор. Он работает как итератор.
 /// Считывает и выдаёт токены по одному.
 ///
 /// У нас есть множество процедур, которые могут считать лексему, а могут не считать.
 /// Если лексему считать получилось, то процедура устанавливает новое состояние лексера,
 /// а в противном случае оставляет его как есть.
-const Lexer = struct {
+pub const Lexer = struct {
     code: CodeIter,
     pd: PropsData,
 
@@ -203,14 +201,14 @@ fn posOfNext(code: CodeIter) u32 {
     return code.i;
 }
 
-const Token = struct {
+pub const Token = struct {
     tag: TokenTag,
     str: []const u8,
     start: usize,
     end: usize,
 };
 
-const TokenTag = enum {
+pub const TokenTag = enum {
     Eof,
     Symbol,
     OpenBracket,
