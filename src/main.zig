@@ -25,4 +25,5 @@ test "main test" {
     const res = read_module.readFromString("sym", mem_man, pd);
 
     assert(res.err == null);
+    std.testing.refAllDecls(berlisp.lexer);
 }
