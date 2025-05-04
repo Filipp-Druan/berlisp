@@ -114,9 +114,9 @@ const Lexer = struct {
             return Res.fail;
         }
 
-        while (true) {
-            if (isSymbolStartPoint(code.next(), self.pd)) {
-                // Ничего не делаем.
+        while (code.peek()) |point| {
+            if (isSymbolBodyPoint(point, self.pd)) {
+                _ = code.next();
             } else {
                 break;
             }
@@ -228,11 +228,7 @@ test "getSliceToNext" {
 
     const res = getSliceToNext(iter, start);
 
-    std.debug.print("\nres = {d}\n", .{res});
-
     const ref = "bc";
-
-    std.debug.print("\nref = {d}\n", .{ref});
 
     try std.testing.expectEqualStrings(ref, res);
 }
