@@ -44,6 +44,15 @@ pub const Lexer = struct {
     }
 
     pub fn next(self: *Lexer) !Token {
+        return self.readNext();
+    }
+
+    pub fn peek(self: *Lexer) !Token {
+        var lexer = self.*;
+        return Lexer.readNext(&lexer);
+    }
+
+    pub fn readNext(self: *Lexer) !Token {
         switch (self.readEof()) {
             .tok => |token| return token,
             .fail => {},
