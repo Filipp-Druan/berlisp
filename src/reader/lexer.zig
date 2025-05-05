@@ -39,6 +39,10 @@ pub const Lexer = struct {
         return lexer;
     }
 
+    pub fn initFromString(str: []const u8, pd: PropsData) Lexer {
+        return Lexer.init(CodeIter{ .bytes = str }, pd);
+    }
+
     pub fn next(self: *Lexer) !Token {
         switch (self.readEof()) {
             .tok => |token| return token,
