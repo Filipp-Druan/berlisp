@@ -26,4 +26,5 @@ test "main test" {
 
     assert(res.err == null);
     std.testing.refAllDecls(berlisp.lexer);
+    std.testing.refAllDecls(berlisp.parser);
 }
