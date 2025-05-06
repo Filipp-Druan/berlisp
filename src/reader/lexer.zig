@@ -269,10 +269,6 @@ test "Lexer.next" {
     const st = try lexer.next();
     const cbt = try lexer.next();
 
-    std.debug.print("obt.str = {s}\n", .{obt.str});
-    std.debug.print("st.str = {s}\n", .{st.str});
-    std.debug.print("obt.str = {s}\n", .{cbt.str});
-
     try std.testing.expectEqualStrings("(", obt.str);
     try std.testing.expectEqualStrings("sym", st.str);
     try std.testing.expectEqualStrings(")", cbt.str);
