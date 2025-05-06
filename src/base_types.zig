@@ -105,36 +105,33 @@ pub const ConsCell = struct {
     }
 
     pub const ListAccum = struct {
-        isNil: bool,
         first: ?*GCObj,
         last_cell: ?*GCObj,
         mem_man: *MemoryManager,
 
         pub fn init(mem_man: *MemoryManager) ListAccum {
             return .{
-                .isNil = true,
                 .first = null,
                 .last_cell = null,
                 .mem_man = mem_man,
             };
         }
 
-        pub fn get(self: *ListAccum) ListAccum {
-            if (self.isNil) {
-                return self.mem_man.nil;
+        pub fn get(self: *ListAccum) *GCObj {
+            if (self.first) |first_cell| {
+                return first_cell;
             } else {
-                return self.first;
+                return self.mem_man.nil;
             }
         }
 
         pub fn addToEnd(self: *@This(), obj: *GCObj) !void {
-            if (self.isNil) {
+            if (self.first) |_| {
+                const cell = try self.mem_man.build.cons(obj, self.mem_man.nil);
+                self.last_cell.?.obj.cons_cell.cdr = cell; // Делаем новосозданную ячейку последней в списке
+            } else {
                 self.first = try self.mem_man.build.cons(obj, self.mem_man.nil);
                 self.last_cell = self.first;
-                self.isNil = false;
-            } else {
-                const cell = self.mem_man.build.cons(obj, self.mem_man.nil);
-                self.last_cell.?.obj.cons_cell.cdr = cell; // Делаем новосозданную ячейку последней в списке
             }
         }
     };
