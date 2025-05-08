@@ -52,7 +52,21 @@ pub const Lexer = struct {
         return Lexer.readNext(&lexer);
     }
 
+    pub fn skipWhiteSpace(self: *Lexer) void {
+        var code = &self.code;
+        while (code.peek()) |point| {
+            if (self.pd.isWhitespace(point.code)) {
+                _ = code.next();
+                continue;
+            } else {
+                break;
+            }
+        }
+    }
+
     pub fn readNext(self: *Lexer) !Token {
+        self.skipWhiteSpace();
+
         switch (self.readEof()) {
             .tok => |token| return token,
             .fail => {},
