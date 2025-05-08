@@ -71,12 +71,13 @@ pub const Reader = struct {
     }
     /// Первый токен обязательно должен быть левой скобкой. Иначе это не список
     pub fn readList(self: *Reader) anyerror!Res {
-        var reader = self.*;
-        const tok = try reader.lexer.next();
+        var reader = self.*; // Копируем ридер, чтобы вносить изменения в копию. Если всё считается
+        // Можно будет заменить оригинал изменеённой копией.
+        const tok = try reader.lexer.next(); // Пробуем посмотреть, какой символ следующий.
 
         std.debug.print("\nНачинаем считывать список\n", .{});
 
-        if (tok.tag != .OpenBracket) {
+        if (tok.tag != .OpenBracket) { // Этот символ обязан быть открывающей скобкой.
             return Res.fail;
         }
         std.debug.print("Первая скобка считана!\n", .{});
