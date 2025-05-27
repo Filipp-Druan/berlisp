@@ -71,7 +71,7 @@ pub const Environment = struct {
     }
 
     /// Позволяет определить переменную. Если она уже определена, будет ошибка.
-    pub fn def(self: *Environment, symbol: *GCObj, val: *GCObj, mem_man: MemoryManager) !*GCObj {
+    pub fn def(self: *Environment, symbol: *GCObj, val: *GCObj, mem_man: *MemoryManager) !*GCObj {
         if (self.map.get(symbol)) {
             return EnvError.VariableIsAlreadyDefined;
         }
