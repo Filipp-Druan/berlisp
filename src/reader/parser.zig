@@ -14,6 +14,7 @@ const assert = std.debug.assert;
 
 const Allocator = std.mem.Allocator;
 
+const Interpreter = berlisp.interpreter.Interpreter;
 const MemoryManager = mem.MemoryManager;
 const GCObj = mem.GCObj;
 
@@ -26,22 +27,22 @@ const Lexer = berlisp.lexer.Lexer;
 // Выходные данные - !*GCObj
 //
 
-pub const Reader = struct {
+pub const Parser = struct {
     lexer: Lexer,
     mem_man: *MemoryManager,
 
-    pub fn init(str: []const u8, mem_man: *MemoryManager, pd: PropsData) Reader {
+    pub fn init(str: []const u8, mem_man: *MemoryManager, pd: PropsData) Parser {
         return .{
             .lexer = Lexer.initFromString(str, pd),
             .mem_man = mem_man,
         };
     }
 
-    pub fn next(self: *Reader) !*GCObj {
+    pub fn next(self: *Parser) !*GCObj {
         return self.readNext();
     }
 
-    pub fn readNext(self: *Reader) !*GCObj {
+    pub fn readNext(self: *Parser) !*GCObj {
         switch (try self.readSymbol()) {
             .obj => |obj| return obj,
             .fail => {},
@@ -55,7 +56,7 @@ pub const Reader = struct {
         return ParsingError.CantParse;
     }
 
-    pub fn readSymbol(self: *Reader) !Res {
+    pub fn readSymbol(self: *Parser) !Res {
         var lexer = self.lexer;
 
         const tok = try lexer.next();
@@ -70,24 +71,24 @@ pub const Reader = struct {
         }
     }
     /// Первый токен обязательно должен быть левой скобкой. Иначе это не список
-    pub fn readList(self: *Reader) anyerror!Res {
+    pub fn readList(self: *Parser) anyerror!Res {
         var reader = self.*; // Копируем ридер, чтобы вносить изменения в копию. Если всё считается
         // Можно будет заменить оригинал изменеённой копией.
         const tok = try reader.lexer.next(); // Пробуем посмотреть, какой символ следующий.
 
-        std.debug.print("\nНачинаем считывать список\n", .{});
+        // std.debug.print("\nНачинаем считывать список\n", .{});
 
         if (tok.tag != .OpenBracket) { // Этот символ обязан быть открывающей скобкой.
             return Res.fail;
         }
-        std.debug.print("Первая скобка считана!\n", .{});
+        // std.debug.print("Первая скобка считана!\n", .{});
 
         var acc = base_types.ConsCell.ListAccum.init(self.mem_man);
 
         while (true) {
-            std.debug.print("Начинаем считывать элементы!\n", .{});
+            // std.debug.print("Начинаем считывать элементы!\n", .{});
             const token = try reader.lexer.peek();
-            std.debug.print("Следующий тег: {s}", .{@tagName(token.tag)});
+            // std.debug.print("Следующий тег: {s}", .{@tagName(token.tag)});
 
             switch (token.tag) {
                 .CloseBracket => {
@@ -124,37 +125,55 @@ const ParsingError = error{
 };
 
 test "Reader.next" {
-    var mem_man = try MemoryManager.init(std.testing.allocator);
-    defer mem_man.deinit();
+    var interpreter = try Interpreter.init(std.testing.allocator);
+    defer interpreter.deinit();
 
-    const pd = try PropsData.init(std.testing.allocator);
-    defer pd.deinit();
-
-    var reader = Reader.init("sym", mem_man, pd);
+    var reader = Parser.init("sym", interpreter.mem_man, interpreter.pd);
 
     const sym = try reader.next();
-    const sym_ref = mem_man.intern("sym");
+    const sym_ref = interpreter.mem_man.intern("sym");
 
     try std.testing.expectEqual(sym, sym_ref);
 }
 
 test "Read list" {
-    var mem_man = try MemoryManager.init(std.testing.allocator);
-    defer mem_man.deinit();
+    var interpreter = try Interpreter.init(std.testing.allocator);
+    defer interpreter.deinit();
 
-    const pd = try PropsData.init(std.testing.allocator);
-    defer pd.deinit();
-
-    const env = try berlisp.env.Environment.new(mem_man, null);
-
-    var reader = Reader.init("(quote sym)", mem_man, pd);
+    var reader = Parser.init("(quote sym)", interpreter.mem_man, interpreter.pd);
 
     const code = try reader.next();
 
     assert(code.obj == .cons_cell);
 
-    const res = try berlisp.eval.eval(code, mem_man, env);
+    const res = try interpreter.eval(code);
 
-    const ref = try mem_man.intern("sym");
+    const ref = try interpreter.mem_man.intern("sym");
     assert(res == ref);
+}
+
+test "Read nested list" {
+    var interpreter = try Interpreter.init(std.testing.allocator);
+    defer interpreter.deinit();
+
+    var reader = Parser.init("(hello (quote sym))", interpreter.mem_man, interpreter.pd);
+
+    const code = try reader.next();
+
+    const len = try code.obj.cons_cell.len();
+
+    assert(len == 2);
+}
+
+test "Read nested list 2" {
+    var interpreter = try Interpreter.init(std.testing.allocator);
+    defer interpreter.deinit();
+
+    var reader = Parser.init("(hello (quote sym) (quote sym))", interpreter.mem_man, interpreter.pd);
+
+    const code = try reader.next();
+
+    const len = try code.obj.cons_cell.len();
+
+    assert(len == 3);
 }

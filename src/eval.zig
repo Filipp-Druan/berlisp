@@ -6,13 +6,16 @@ const berlisp = @import("berlisp.zig");
 const env = berlisp.env;
 const mem = berlisp.memory;
 const bt = berlisp.base_types;
+const reader = berlisp.reader;
 
 const assert = std.debug.assert;
+const print = std.debug.print;
 
 const MemoryManager = mem.MemoryManager;
 const GCObj = mem.GCObj;
 const Environment = env.Environment;
 const StackBuilder = berlisp.stack_builder.StackBuilder;
+const Interpreter = berlisp.interpreter.Interpreter;
 
 const EvalError = error{
     CalledNotAFunction,
@@ -21,50 +24,50 @@ const EvalError = error{
 };
 
 /// TODO
-pub fn eval(code: *GCObj, mem_man: *MemoryManager, current_env: *GCObj) anyerror!*GCObj {
+pub fn eval(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) anyerror!*GCObj {
     switch (code.obj) {
         .nil => return code, // TODO
-        .number => return code.take(mem_man),
-        .str => return code.take(mem_man),
-        .symbol => return current_env.obj.environment.takeValBySym(code, mem_man),
-        .cons_cell => return evalCall(code, mem_man, current_env),
+        .number => return code.take(interpreter.mem_man),
+        .str => return code.take(interpreter.mem_man),
+        .symbol => return current_env.obj.environment.takeValBySym(code, interpreter.mem_man),
+        .cons_cell => return evalCall(code, interpreter, current_env),
         else => return EvalError.NotImplemented,
     }
 }
 
-pub fn evalCall(code: *GCObj, mem_man: *MemoryManager, current_env: *GCObj) !*GCObj {
-    if (isSpecialForm(code, mem_man)) {
-        return evalSpecial(code, mem_man, current_env);
+pub fn evalCall(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) !*GCObj {
+    if (isSpecialForm(code, interpreter.mem_man)) {
+        return evalSpecial(code, interpreter, current_env);
     } else {
         return EvalError.NotImplemented;
     }
 }
 
-fn evalSpecial(code: *GCObj, mem_man: *MemoryManager, current_env: *GCObj) !*GCObj {
+fn evalSpecial(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) !*GCObj {
     const first = code.obj.cons_cell.first();
 
-    if (first == mem_man.spec.quote_sym) {
-        return evalQuote(code, mem_man);
-    } else if (first == mem_man.spec.if_sym) {
-        return evalIf(code, mem_man, current_env);
+    if (first == interpreter.mem_man.spec.quote_sym) {
+        return evalQuote(code, interpreter);
+    } else if (first == interpreter.mem_man.spec.if_sym) {
+        return evalIf(code, interpreter, current_env);
     } else {
         return EvalError.NotImplemented;
     }
 }
 
-pub fn evalQuote(code: *GCObj, mem_man: *MemoryManager) !*GCObj {
-    return (try code.obj.cons_cell.second()).take(mem_man);
+pub fn evalQuote(code: *GCObj, interpreter: *Interpreter) !*GCObj {
+    return (try code.obj.cons_cell.second()).take(interpreter.mem_man);
 }
 
-pub fn evalIf(code: *GCObj, mem_man: *MemoryManager, current_env: *GCObj) !*GCObj {
-    const condition = try eval(try code.obj.cons_cell.second(), mem_man, current_env);
+pub fn evalIf(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) !*GCObj {
+    const condition = try eval(try code.obj.cons_cell.second(), interpreter, current_env);
     const then_expr = try code.obj.cons_cell.third();
     const else_expr = try code.obj.cons_cell.fourth();
 
     if (condition.obj != .nil) {
-        return eval(then_expr, mem_man, current_env);
+        return eval(then_expr, interpreter, current_env);
     } else {
-        return eval(else_expr, mem_man, current_env);
+        return eval(else_expr, interpreter, current_env);
     }
 }
 
@@ -120,45 +123,36 @@ fn isSpecialForm(code: *const GCObj, mem_man: *const MemoryManager) bool {
 // Так и сделаю!
 
 test "eval quote" {
-    var mem_man = try MemoryManager.init(std.testing.allocator);
-    defer mem_man.deinit();
-    var sb = try StackBuilder.init(mem_man);
-    defer sb.deinit();
-    const global_env = try mem_man.build.env(null);
+    var interp = try Interpreter.init(std.testing.allocator);
+    defer interp.deinit();
 
-    const expr = try sb.nil().sym("hello").cons().sym("quote").cons().build();
+    var interpreter = &interp;
 
-    const res = try eval(expr, mem_man, global_env);
+    const expr = try reader.readFromString("(quote hello)", interpreter);
 
-    assert(res == try mem_man.intern("hello"));
+    const res = try eval(expr, interpreter, interpreter.env);
+
+    assert(res == try interpreter.mem_man.intern("hello"));
 }
 
 test "eval if" {
-    var mem_man = try MemoryManager.init(std.testing.allocator);
-    defer mem_man.deinit();
-    var sb = try StackBuilder.init(mem_man);
-    defer sb.deinit();
-    const global_env = try mem_man.build.env(null);
+    var interp = try Interpreter.init(std.testing.allocator);
+    defer interp.deinit();
 
-    const expr_1 = try sb.nil()
-        .nil().sym("hello").cons().sym("quote").cons().cons()
-        .nil().sym("world").cons().sym("quote").cons().cons()
-        .nil().cons()
-        .sym("if").cons()
-        .build();
+    var interpreter = &interp;
 
-    const res_1 = try eval(expr_1, mem_man, global_env);
+    const expr_1 = try reader.readFromString("(if nil (quote world) (quote hello))", interpreter);
+    print("Мы прочитали первое выражение", .{});
 
-    assert(res_1 == try mem_man.intern("hello"));
+    const res_1 = try eval(expr_1, interpreter, interpreter.env);
+    print("Мы исполнили первое выражение", .{});
 
-    const expr_2 = try sb.nil()
-        .nil().sym("hello").cons().sym("quote").cons().cons()
-        .nil().sym("world").cons().sym("quote").cons().cons()
-        .nil().sym("true").cons().sym("quote").cons().cons()
-        .sym("if").cons()
-        .build();
+    assert(res_1 == try interpreter.mem_man.intern("hello"));
 
-    const res_2 = try eval(expr_2, mem_man, global_env);
+    const expr_2 = try reader.readFromString("(if (quote true) (quote world) (quote hello))", interpreter);
 
-    assert(res_2 == try mem_man.intern("world"));
+    const res_2 = try eval(expr_2, interpreter, interpreter.env);
+    print("Мы исполнили второе выражение", .{});
+
+    assert(res_2 == try interpreter.mem_man.intern("world"));
 }

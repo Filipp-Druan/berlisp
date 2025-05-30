@@ -6,5 +6,7 @@ pub const stack_builder = @import("StackBuilder.zig");
 pub const read_module = @import("read.zig");
 pub const lexer = @import("reader/lexer.zig");
 pub const parser = @import("reader/parser.zig");
+pub const reader = @import("reader/reader.zig");
 pub const eval = @import("eval.zig");
+pub const interpreter = @import("iterpreter.zig");
 //pub const functions = @import("functoins.zig");
