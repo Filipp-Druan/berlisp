@@ -9,4 +9,5 @@ pub const parser = @import("reader/parser.zig");
 pub const reader = @import("reader/reader.zig");
 pub const eval = @import("eval.zig");
 pub const interpreter = @import("iterpreter.zig");
+pub const printer = @import("print.zig");
 //pub const functions = @import("functoins.zig");
