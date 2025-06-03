@@ -35,8 +35,8 @@ pub const Interpreter = struct {
     }
 
     pub fn deinit(self: *Interpreter) void {
+        self.pd.deinit(self.mem_man.allocator);
         self.mem_man.deinit();
-        self.pd.deinit();
     }
 
     pub fn eval(self: *Interpreter, code: *GCObj) !*GCObj {

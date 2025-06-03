@@ -263,7 +263,7 @@ test "Lexer.init" {
     defer mem_man.deinit();
 
     const pd = try PropsData.init(std.testing.allocator);
-    defer pd.deinit();
+    defer pd.deinit(std.testing.allocator);
 
     const code = CodeIter{ .bytes = "sym" };
     _ = Lexer.init(code, pd);
@@ -274,7 +274,7 @@ test "Lexer.next" {
     defer mem_man.deinit();
 
     const pd = try PropsData.init(std.testing.allocator);
-    defer pd.deinit();
+    defer pd.deinit(std.testing.allocator);
 
     const code = CodeIter{ .bytes = "(sym)" };
     var lexer = Lexer.init(code, pd);

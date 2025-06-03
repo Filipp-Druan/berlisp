@@ -41,8 +41,8 @@
             .hash = "mecha-0.10.0-dVGaSJ5aAQAUbK6I2T6_IbQg2AhAfG7f7wnraltqvJpP",
         },
         .zg = .{
-            .url = "https://codeberg.org/atman/zg/archive/master.tar.gz",
-            .hash = "zg-0.13.5-oGqU3I6Z7QLV3PcngiIPop2sAiHj740sK36VsXmYUMAp",
+            .url = "git+https://codeberg.org/atman/zg/?ref=master#0b05141b033043c5f7bcd72048a48eef6531ea6c",
+            .hash = "zg-0.14.0-oGqU3KEFswIffnDu8eAE2XlhzwcfgjwtM6akIc5L7cEV",
         },
         .exre = .{
             .url = "git+https://git.sr.ht/~leon_plickat/zig-exre#565ff0a83ea62389714ad439c49fa6bfdc21f5a9",

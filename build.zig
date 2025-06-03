@@ -124,11 +124,11 @@ pub fn build(b: *std.Build) void {
     const zg = b.dependency("zg", .{});
 
     lib_mod.addImport("code_point", zg.module("code_point"));
-    lib_mod.addImport("PropsData", zg.module("PropsData"));
+    lib_mod.addImport("PropsData", zg.module("Properties"));
 
     exe_mod.addImport("code_point", zg.module("code_point"));
-    exe_mod.addImport("PropsData", zg.module("PropsData"));
+    exe_mod.addImport("PropsData", zg.module("Properties"));
 
     test_exe.root_module.addImport("code_point", zg.module("code_point"));
-    test_exe.root_module.addImport("PropsData", zg.module("PropsData"));
+    test_exe.root_module.addImport("PropsData", zg.module("Properties"));
 }
