@@ -92,6 +92,7 @@ pub const Parser = struct {
 
             switch (token.tag) {
                 .CloseBracket => {
+                    _ = try reader.lexer.next();
                     self.* = reader;
                     return Res.success(acc.get());
                 },
@@ -99,7 +100,7 @@ pub const Parser = struct {
                     return ParsingError.Eof;
                 },
                 else => {
-                    const obj = try reader.next();
+                    const obj = try reader.readNext();
 
                     try acc.addToEnd(obj);
 
@@ -174,6 +175,8 @@ test "Read nested list 2" {
     const code = try reader.next();
 
     const len = try code.obj.cons_cell.len();
+    std.debug.print("\nlen = {}\n", .{len});
+    berlisp.printer.print(code);
 
     assert(len == 3);
 }
