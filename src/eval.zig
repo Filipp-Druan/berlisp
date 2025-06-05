@@ -142,17 +142,14 @@ test "eval if" {
     var interpreter = &interp;
 
     const expr_1 = try reader.readFromString("(if nil (quote world) (quote hello))", interpreter);
-    print("Мы прочитали первое выражение", .{});
 
     const res_1 = try eval(expr_1, interpreter, interpreter.env);
-    print("Мы исполнили первое выражение", .{});
 
     assert(res_1 == try interpreter.mem_man.intern("hello"));
 
     const expr_2 = try reader.readFromString("(if (quote true) (quote world) (quote hello))", interpreter);
 
     const res_2 = try eval(expr_2, interpreter, interpreter.env);
-    print("Мы исполнили второе выражение", .{});
 
     assert(res_2 == try interpreter.mem_man.intern("world"));
 }
