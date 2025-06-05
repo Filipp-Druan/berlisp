@@ -106,8 +106,7 @@ pub const Lexer = struct {
         const start = code.i;
 
         if (isOpenBracket(code.next())) {
-            var lexer = self;
-            lexer.code = code;
+            self.code = code;
 
             return Res.success(.OpenBracket, start, code);
         } else {
