@@ -76,7 +76,7 @@ pub const Parser = struct {
         // Можно будет заменить оригинал изменеённой копией.
         const tok = try reader.lexer.next(); // Пробуем посмотреть, какой символ следующий.
 
-        // std.debug.print("\nНачинаем считывать список\n", .{});
+        // std.debug.print("\nНачинаем считывать список \n", .{});
 
         if (tok.tag != .OpenBracket) { // Этот символ обязан быть открывающей скобкой.
             return Res.fail;
@@ -85,10 +85,10 @@ pub const Parser = struct {
 
         var acc = base_types.ConsCell.ListAccum.init(self.mem_man);
 
+        // std.debug.print("Начинаем считывать элементы!\n", .{});
         while (true) {
-            // std.debug.print("Начинаем считывать элементы!\n", .{});
             const token = try reader.lexer.peek();
-            // std.debug.print("Следующий тег: {s}", .{@tagName(token.tag)});
+            // std.debug.print("Следующий тег: {s}, его str: {s}\n", .{ @tagName(token.tag), token.str });
 
             switch (token.tag) {
                 .CloseBracket => {
@@ -103,6 +103,7 @@ pub const Parser = struct {
                     const obj = try reader.readNext();
 
                     try acc.addToEnd(obj);
+                    // std.debug.print("Добавляем элемент в список.\n", .{});
 
                     continue;
                 },
@@ -170,13 +171,15 @@ test "Read nested list 2" {
     var interpreter = try Interpreter.init(std.testing.allocator);
     defer interpreter.deinit();
 
-    var reader = Parser.init("(hello (quote sym) (quote sym))", interpreter.mem_man, interpreter.pd);
+    var reader = Parser.init("(hello (quote (quote sym)) (quote foo))", interpreter.mem_man, interpreter.pd);
 
     const code = try reader.next();
 
-    const len = try code.obj.cons_cell.len();
-    std.debug.print("\nlen = {}\n", .{len});
-    berlisp.printer.print(code);
+    const quote_quote_sym = try code.obj.cons_cell.second();
 
-    assert(len == 3);
+    const code_len = try code.obj.cons_cell.len();
+    const qqs_len = try quote_quote_sym.obj.cons_cell.len();
+
+    assert(code_len == 3);
+    assert(qqs_len == 2);
 }
