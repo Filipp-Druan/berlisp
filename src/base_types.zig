@@ -129,6 +129,7 @@ pub const ConsCell = struct {
             if (self.first) |_| {
                 const cell = try self.mem_man.build.cons(obj, self.mem_man.nil);
                 self.last_cell.?.obj.cons_cell.cdr = cell; // Делаем новосозданную ячейку последней в списке
+                self.last_cell = cell;
             } else {
                 self.first = try self.mem_man.build.cons(obj, self.mem_man.nil);
                 self.last_cell = self.first;
@@ -373,4 +374,17 @@ test "СonsCell get" {
     assert(try list.obj.cons_cell.get(1) == try mem_man.intern("my"));
 
     assert(try list.obj.cons_cell.get(2) == try mem_man.intern("Hello"));
+}
+
+test "ListAccum" {
+    var mem_man = try MemoryManager.init(std.testing.allocator);
+    defer mem_man.deinit();
+
+    var acc = ConsCell.ListAccum.init(mem_man);
+    try acc.addToEnd(try mem_man.intern("foo"));
+    try acc.addToEnd(try mem_man.intern("ban"));
+    try acc.addToEnd(try mem_man.intern("baz"));
+
+    const list = acc.get();
+    assert((try list.obj.cons_cell.len()) == 3);
 }
