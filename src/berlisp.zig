@@ -3,7 +3,6 @@ pub const memory = @import("memory.zig");
 pub const env = @import("env.zig");
 pub const builder = @import("Builder.zig");
 pub const stack_builder = @import("StackBuilder.zig");
-pub const read_module = @import("read.zig");
 pub const lexer = @import("reader/lexer.zig");
 pub const parser = @import("reader/parser.zig");
 pub const reader = @import("reader/reader.zig");
