@@ -15,6 +15,7 @@ pub const LispObj = union(enum) {
     environment: Environment,
     str: Str,
     number: Number,
+    closure: berlisp.functions.Function,
 };
 
 pub const Nil = struct {
@@ -134,6 +135,32 @@ pub const ConsCell = struct {
                 self.first = try self.mem_man.build.cons(obj, self.mem_man.nil);
                 self.last_cell = self.first;
             }
+        }
+    };
+
+    pub const Iter = struct {
+        list: ?*GCObj,
+
+        pub fn init(list: *GCObj) Iter {
+            if (list.obj == .nil) {
+                return .{ .list = null };
+            } else if (list.obj == .cons_cell) {
+                return .{ .list = list };
+            } else {
+                unreachable;
+            }
+        }
+
+        pub fn next(self: *Iter) ?*GCObj {
+            if (self.list) |lst| {
+                switch (lst.obj) {
+                    .cons_cell => |cell| {
+                        self.list = cell.cdr;
+                        return cell.car;
+                    },
+                    else => return null,
+                }
+            } else return null;
         }
     };
 };
@@ -387,4 +414,21 @@ test "ListAccum" {
 
     const list = acc.get();
     assert((try list.obj.cons_cell.len()) == 3);
+}
+
+test "ConsCell.Iter" {
+    var interp = try berlisp.interpreter.Interpreter.init(std.testing.allocator);
+    defer interp.deinit();
+
+    //const interpreter = &interp;
+
+    //const expr = try berlisp.reader.readFromString("(quote (hello) hello)", interpreter);
+
+    //var iter = ConsCell.Iter.init(expr);
+
+    //const printer = berlisp.printer;
+
+    //printer.print(iter.next().?);
+    //printer.print(iter.next().?);
+    //printer.print(iter.next().?);
 }

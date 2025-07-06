@@ -8,6 +8,8 @@ const mem = berlisp.memory;
 const bt = berlisp.base_types;
 const reader = berlisp.reader;
 
+const functions = berlisp.functions;
+
 const assert = std.debug.assert;
 const print = std.debug.print;
 
@@ -17,9 +19,12 @@ const Environment = env.Environment;
 const StackBuilder = berlisp.stack_builder.StackBuilder;
 const Interpreter = berlisp.interpreter.Interpreter;
 
+const ListIter = bt.ConsCell.Iter;
+
 const EvalError = error{
     CalledNotAFunction,
     CallCodeNotList,
+    CallNotAFunction,
     NotImplemented,
 };
 
@@ -39,7 +44,7 @@ pub fn evalCall(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) !*
     if (isSpecialForm(code, interpreter.mem_man)) {
         return evalSpecial(code, interpreter, current_env);
     } else {
-        return EvalError.NotImplemented;
+        return evalFunCall(code, interpreter, current_env);
     }
 }
 
@@ -50,9 +55,28 @@ fn evalSpecial(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) !*G
         return evalQuote(code, interpreter);
     } else if (first == interpreter.mem_man.spec.if_sym) {
         return evalIf(code, interpreter, current_env);
+    } else if (first == interpreter.mem_man.spec.fn_sym) {
+        return evalFn(code, interpreter, current_env);
     } else {
         return EvalError.NotImplemented;
     }
+}
+
+fn evalFunCall(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) !*GCObj {
+    var iter = berlisp.base_types.ConsCell.Iter.init(code);
+    const operator = iter.next().?;
+
+    var args = berlisp.functions.ArgList.init(interpreter.mem_man.allocator);
+
+    while (iter.next()) |expr| {
+        const param = try eval(expr, interpreter, current_env);
+        try args.append(param);
+    }
+    const closure = try eval(operator, interpreter, current_env);
+
+    if (closure.obj != .closure) return EvalError.CalledNotAFunction;
+
+    return closure.obj.closure.call(&args, interpreter);
 }
 
 pub fn evalQuote(code: *GCObj, interpreter: *Interpreter) !*GCObj {
@@ -70,6 +94,43 @@ pub fn evalIf(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) !*GC
         return eval(else_expr, interpreter, current_env);
     }
 }
+
+// Исполняет форму fn которая создаёт функцию.
+// (fn (arg1 ...) body ...)
+pub fn evalFn(code: *GCObj, interpreter: *Interpreter, current_env: *GCObj) !*GCObj {
+    var iter = ListIter.init(code);
+    assert(iter.next() == interpreter.mem_man.spec.fn_sym); // Пропускаем имя специальной формы.
+
+    var args: *GCObj = undefined;
+
+    if (iter.next()) |args_list| {
+        args = args_list;
+    }
+
+    var body_iter = iter;
+
+    var args_iter = ListIter.init(args);
+    var arg_list = functions.ArgList.init(interpreter.mem_man.allocator);
+
+    while (args_iter.next()) |param| {
+        if (param.obj != .symbol) return FnError.ArgumentIsntSymbol;
+
+        try arg_list.append(param);
+    }
+
+    var body_list = functions.ArgList.init(interpreter.mem_man.allocator);
+
+    while (body_iter.next()) |param| {
+        try body_list.append(param);
+    }
+
+    return functions.Function.newLispFunction(interpreter.mem_man, arg_list, body_list, current_env);
+}
+
+pub const FnError = error{
+    ListToShort,
+    ArgumentIsntSymbol,
+};
 
 pub fn getOperator(code: *const GCObj) !*GCObj {
     if (code.obj == .list) {} else {
