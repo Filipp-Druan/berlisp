@@ -53,6 +53,11 @@ pub const Parser = struct {
             .fail => {},
         }
 
+        switch (try self.readQuote()) {
+            .obj => |obj| return obj,
+            .fail => {},
+        }
+
         return ParsingError.CantParse;
     }
 
@@ -109,6 +114,27 @@ pub const Parser = struct {
                 },
             }
         }
+    }
+
+    pub fn readQuote(self: *Parser) anyerror!Res {
+        var reader = self.*; // Копируем ридер, чтобы вносить изменения в копию. Если всё считается
+        // Можно будет заменить оригинал изменеённой копией.
+        const tok = try reader.lexer.next(); // Пробуем посмотреть, какой символ следующий.
+
+        // std.debug.print("\nНачинаем считывать список \n", .{});
+
+        if (tok.tag != .Quote) { // Этот символ обязан быть открывающей скобкой.
+            return Res.fail;
+        }
+
+        var acc = base_types.ConsCell.ListAccum.init(self.mem_man);
+
+        try acc.addToEnd(try self.mem_man.intern("quote"));
+        try acc.addToEnd(try reader.readNext());
+
+        self.* = reader;
+
+        return Res.success(acc.get());
     }
 };
 
