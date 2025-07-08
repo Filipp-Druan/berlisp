@@ -76,10 +76,20 @@ pub const Lexer = struct {
             .fail => {},
         }
         switch (self.readOpenBracket()) {
-            .tok => |token| return token,
+            .tok => |token| {
+                std.debug.print("readOpenBracket\n", .{});
+                return token;
+            },
             .fail => {},
         }
         switch (self.readCloseBracket()) {
+            .tok => |token| {
+                std.debug.print("readCloseBracket\n", .{});
+                return token;
+            },
+            .fail => {},
+        }
+        switch (self.readQuote()) {
             .tok => |token| return token,
             .fail => {},
         }
@@ -101,31 +111,37 @@ pub const Lexer = struct {
         }
     }
 
-    fn readOpenBracket(self: *Lexer) Res {
+    fn readByPredicate(self: *Lexer, pred: PointPredicate, tag: TokenTag) Res {
         var code = self.code;
         const start = code.i;
-
-        if (isOpenBracket(code.next())) {
+        if (pred(code.next(), self.pd)) {
             self.code = code;
 
-            return Res.success(.OpenBracket, start, code);
+            return Res.success(tag, start, code);
         } else {
             return Res.fail;
         }
     }
 
-    fn readCloseBracket(self: *Lexer) Res {
+    fn readQuote(self: *Lexer) Res {
         var code = self.code;
         const start = code.i;
 
-        if (isCloseBracket(code.next())) {
-            var lexer = self;
-            lexer.code = code;
+        if (cmp(code.next(), '\'')) {
+            self.code = code;
 
-            return Res.success(.CloseBracket, start, code);
+            return Res.success(.Quote, start, code);
         } else {
             return Res.fail;
         }
+    }
+
+    fn readOpenBracket(self: *Lexer) Res {
+        return self.readByPredicate(isOpenBracket, .OpenBracket);
+    }
+
+    fn readCloseBracket(self: *Lexer) Res {
+        return self.readByPredicate(isCloseBracket, .CloseBracket);
     }
 
     fn readSymbol(self: *Lexer) Res {
@@ -152,6 +168,8 @@ pub const Lexer = struct {
         return Res.success(.Symbol, start, code);
     }
 };
+
+const PointPredicate = fn (?CodePoint, PropsData) bool;
 
 const LexError = error{
     CantRead,
@@ -195,6 +213,7 @@ fn isSymbolStartPoint(cp: ?CodePoint, pd: PropsData) bool {
     }
 }
 
+
 fn isSymbolBodyPoint(cp: ?CodePoint, pd: PropsData) bool {
     if (cp) |point| {
         const code = point.code;
@@ -205,19 +224,30 @@ fn isSymbolBodyPoint(cp: ?CodePoint, pd: PropsData) bool {
     }
 }
 
-fn isOpenBracket(cp: ?CodePoint) bool {
+fn isQuote(cp: ?CodePoint, pd: PropsData) bool {
+    _ = pd;
+    return cmp(cp, '\'');
+}
+
+fn isOpenBracket(cp: ?CodePoint, pd: PropsData) bool {
+    _ = pd;
+    return cmp(cp, '(') or cmp(cp, ')');
+}
+
+fn isCloseBracket(cp: ?CodePoint, pd: PropsData) bool {
+    _ = pd;
     if (cp) |point| {
         const code = point.code;
-        return code == '(' or code == '[';
+        return code == ')' or code == ']';
     } else {
         return false;
     }
 }
 
-fn isCloseBracket(cp: ?CodePoint) bool {
+fn cmp(cp: ?CodePoint, char: u21) bool {
     if (cp) |point| {
         const code = point.code;
-        return code == ')' or code == ']';
+        return code == char;
     } else {
         return false;
     }
@@ -239,6 +269,7 @@ pub const TokenTag = enum {
     Symbol,
     OpenBracket,
     CloseBracket,
+    Quote,
 };
 
 test "getSliceToNext" {
@@ -275,13 +306,15 @@ test "Lexer.next" {
     const pd = try PropsData.init(std.testing.allocator);
     defer pd.deinit(std.testing.allocator);
 
-    const code = CodeIter{ .bytes = "(sym)" };
+    const code = CodeIter{ .bytes = "'(sym)" };
     var lexer = Lexer.init(code, pd);
 
+    const quote = try lexer.next();
     const obt = try lexer.next();
     const st = try lexer.next();
     const cbt = try lexer.next();
 
+    try std.testing.expectEqualStrings("'", quote.str);
     try std.testing.expectEqualStrings("(", obt.str);
     try std.testing.expectEqualStrings("sym", st.str);
     try std.testing.expectEqualStrings(")", cbt.str);
