@@ -76,17 +76,11 @@ pub const Lexer = struct {
             .fail => {},
         }
         switch (self.readOpenBracket()) {
-            .tok => |token| {
-                std.debug.print("readOpenBracket\n", .{});
-                return token;
-            },
+            .tok => |token| return token,
             .fail => {},
         }
         switch (self.readCloseBracket()) {
-            .tok => |token| {
-                std.debug.print("readCloseBracket\n", .{});
-                return token;
-            },
+            .tok => |token| return token,
             .fail => {},
         }
         switch (self.readQuote()) {
@@ -124,16 +118,7 @@ pub const Lexer = struct {
     }
 
     fn readQuote(self: *Lexer) Res {
-        var code = self.code;
-        const start = code.i;
-
-        if (cmp(code.next(), '\'')) {
-            self.code = code;
-
-            return Res.success(.Quote, start, code);
-        } else {
-            return Res.fail;
-        }
+        return self.readByPredicate(isQuote, .Quote);
     }
 
     fn readOpenBracket(self: *Lexer) Res {
@@ -231,17 +216,12 @@ fn isQuote(cp: ?CodePoint, pd: PropsData) bool {
 
 fn isOpenBracket(cp: ?CodePoint, pd: PropsData) bool {
     _ = pd;
-    return cmp(cp, '(') or cmp(cp, ')');
+    return cmp(cp, '(') or cmp(cp, '[');
 }
 
 fn isCloseBracket(cp: ?CodePoint, pd: PropsData) bool {
     _ = pd;
-    if (cp) |point| {
-        const code = point.code;
-        return code == ')' or code == ']';
-    } else {
-        return false;
-    }
+    return cmp(cp, ')') or cmp(cp, ']');
 }
 
 fn cmp(cp: ?CodePoint, char: u21) bool {
@@ -318,4 +298,15 @@ test "Lexer.next" {
     try std.testing.expectEqualStrings("(", obt.str);
     try std.testing.expectEqualStrings("sym", st.str);
     try std.testing.expectEqualStrings(")", cbt.str);
+}
+
+test "isOpenBracket" {
+    const pd = try PropsData.init(std.testing.allocator);
+    defer pd.deinit(std.testing.allocator);
+
+    var code = CodeIter{ .bytes = "(sym)" };
+
+    const point = code.next();
+
+    assert(isOpenBracket(point, pd));
 }
