@@ -16,7 +16,7 @@ pub const BodyList = std.ArrayList(*GCObj);
 
 pub const Function = union(enum) {
     lisp_fun: LispFun,
-    zig_fun: ZigFun,
+    zig_fun: EmbeddedFun,
 
     pub fn newLispFunction(mem_man: *MemoryManager, args: ArgList, body: BodyList, env: *GCObj) !*GCObj {
         const lisp_fun = LispFun{ .arguments = args, .env = env, .body = body };
@@ -79,10 +79,20 @@ const LispFun = struct {
     }
 };
 
-const ZigFun = struct {
-    fun: *fn (*ArgList, *Interpreter) anyerror!*GCObj, // Этот ?*GCObj - это окружение, в котором вызывается функция.
+const ZigFun = *const fn (*ArgList, *Interpreter) anyerror!*GCObj;
 
-    pub fn call(self: *const ZigFun, args: *ArgList, interpreter: *Interpreter) anyerror!*GCObj {
+const EmbeddedFun = struct {
+    fun: ZigFun, // Этот ?*GCObj - это окружение, в котором вызывается функция.
+
+    pub fn new(mem_man: *MemoryManager, fun: ZigFun) !*GCObj {
+        const zig_fun = Function{
+            .zig_fun = .{ .fun = fun },
+        };
+
+        return mem_man.makeGCObj(.{ .closure = zig_fun });
+    }
+
+    pub fn call(self: *const EmbeddedFun, args: *ArgList, interpreter: *Interpreter) anyerror!*GCObj {
         return self.fun(args, interpreter);
     }
 };
